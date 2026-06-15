@@ -1,57 +1,40 @@
 import { identity } from '@/data/identity';
-import { HeroBackground } from './hero-background';
+import { HeroGrid } from './hero-grid';
+import { HeroPlot } from './hero-plot';
 import { ScrollCue } from './scroll-cue';
-import { HeroReveal, HeroRevealItem } from '@/components/motion/hero-reveal';
 
 /**
- * Hero — the premium landing hero (HERO-01 / HERO-02 / D-06..D-12).
+ * Hero — the "engineering blueprint" landing hero (HERO-01 / HERO-02).
  *
- * Centered, full-viewport (min-h-[100svh]) stack composed entirely from
- * `identity.js` (D-09 — no hardcoded hero copy):
- *   wordmark (Display role, the 700-weight hero exception, clamp-scaled) →
- *   accent rule → title (Heading) → tagline (Body) → scroll cue.
- *
- * Entrance is the mount-triggered staggered HeroReveal (D-12); the animated
- * aurora/floating-light/particle atmosphere is HeroBackground (D-06/D-07). All
- * motion is transform/opacity only and degrades to static under reduced motion.
- * Styling consumes design tokens only — no hardcoded hex (carries the WR-02
- * mitigation: semantic tokens, no new `dark:` utilities).
+ * A schematic instrument plane (HeroGrid) under a left-anchored, oversized name
+ * plotted at a live node + drawn axis (HeroPlot), with a vertical `Career OS`
+ * spine and a scroll cue. Asymmetric and grid-breaking by design — the opposite of
+ * a centered stack. Content is read from identity.js (D-09); styling is token-only;
+ * all motion is transform/opacity and degrades to static under reduced motion.
  */
 export function Hero() {
   return (
-    <section className="relative flex min-h-[100svh] flex-col items-center justify-center overflow-hidden px-4 text-center md:px-6 lg:px-8">
-      <HeroBackground />
+    <section className="relative flex min-h-[100svh] items-center overflow-hidden py-24">
+      <HeroGrid />
 
-      <HeroReveal className="flex w-full max-w-content flex-col items-center">
-        <HeroRevealItem
-          as="h1"
-          className="font-sans font-bold uppercase leading-[1.02] tracking-tight text-primary [text-shadow:var(--glow-accent)]"
-          style={{ fontSize: 'clamp(2.5rem, 8vw, 6rem)' }}
-        >
-          {identity.name}
-        </HeroRevealItem>
+      {/* vertical brand spine */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute left-2 top-1/2 hidden -translate-y-1/2 font-mono text-[11px] uppercase tracking-[0.4em] text-muted-foreground md:left-4 md:block lg:left-6"
+        style={{ writingMode: 'vertical-rl' }}
+      >
+        Career OS
+      </span>
 
-        <HeroRevealItem
-          as="span"
-          className="mt-6 block h-px w-16 bg-primary opacity-60"
+      <div className="mx-auto w-full max-w-content px-4 md:px-10 lg:px-14">
+        <HeroPlot
+          name={identity.name}
+          title={identity.title}
+          tagline={identity.tagline}
         />
+      </div>
 
-        <HeroRevealItem
-          as="p"
-          className="mt-6 font-sans text-heading font-semibold tracking-wide text-foreground"
-        >
-          {identity.title}
-        </HeroRevealItem>
-
-        <HeroRevealItem
-          as="p"
-          className="mt-4 max-w-prose text-body text-muted-foreground"
-        >
-          {identity.tagline}
-        </HeroRevealItem>
-      </HeroReveal>
-
-      <div className="absolute inset-x-0 bottom-10 flex justify-center">
+      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 md:left-auto md:right-10 md:translate-x-0 lg:right-14">
         <ScrollCue targetId="below-hero" />
       </div>
     </section>
