@@ -9,13 +9,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Foundation & Theming
 
-- [ ] **FND-01**: Project scaffolded on Next.js (latest, App Router) in JavaScript with Tailwind CSS, Framer Motion, Lucide React, and ShadCN UI configured
-- [ ] **FND-02**: Design-token system encodes the dichromatic palette (background `#020202`, primary `#B2D5E5`) plus glass/gradient/glow tokens, consumable in Tailwind
-- [ ] **FND-03**: Dark + light theme toggle (dark-first) switches the whole site; choice persists and loads without flash
-- [ ] **FND-04**: Layout is fully responsive across mobile, tablet, and desktop breakpoints
+- [x] **FND-01**: Project scaffolded on Next.js (latest, App Router) in JavaScript with Tailwind CSS, Framer Motion, Lucide React, and ShadCN UI configured
+- [x] **FND-02**: Design-token system encodes the dichromatic palette (background `#020202`, primary `#B2D5E5`) plus glass/gradient/glow tokens, consumable in Tailwind
+- [x] **FND-03**: Dark + light theme toggle (dark-first) switches the whole site; choice persists and loads without flash
+- [x] **FND-04**: Layout is fully responsive across mobile, tablet, and desktop breakpoints
 - [ ] **FND-05**: All motion respects `prefers-reduced-motion` (animations degrade to static/minimal)
 - [ ] **FND-06**: Production build achieves a 90+ Lighthouse score (performance/accessibility/best-practices)
-- [ ] **FND-07**: Site content (identity, stats, projects, experience, skills, links) is driven by editable in-repo data files seeded with known info + tagged TODO placeholders
+- [x] **FND-07**: Site content (identity, stats, projects, experience, skills, links) is driven by editable in-repo data files seeded with known info + tagged TODO placeholders
 
 ### Boot & Landing
 
@@ -68,7 +68,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Motion System
 
-- [ ] **MOT-01**: A cohesive Framer Motion system provides smooth section/page reveal transitions
+- [x] **MOT-01**: A cohesive Framer Motion system provides smooth section/page reveal transitions
 - [ ] **MOT-02**: Parallax, mouse-follow glow, hover interactions, glass reflections, and animated gradients are applied tastefully and stay subtle (never distracting)
 
 ## v2 Requirements
@@ -102,12 +102,12 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FND-01 | Phase 1 | Pending |
-| FND-02 | Phase 1 | Pending |
-| FND-03 | Phase 1 | Pending |
-| FND-04 | Phase 1 | Pending |
-| FND-07 | Phase 1 | Pending |
-| MOT-01 | Phase 1 | Pending |
+| FND-01 | Phase 1 | Complete |
+| FND-02 | Phase 1 | Complete |
+| FND-03 | Phase 1 | Complete |
+| FND-04 | Phase 1 | Complete |
+| FND-07 | Phase 1 | Complete |
+| MOT-01 | Phase 1 | Complete |
 | BOOT-01 | Phase 2 | Pending |
 | BOOT-02 | Phase 2 | Pending |
 | HERO-01 | Phase 2 | Pending |
@@ -138,6 +138,7 @@ Which phases cover which requirements. Populated during roadmap creation.
 | FND-06 | Phase 7 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 31 total
 - Mapped to phases: 31 (100%)
 - Unmapped: 0
