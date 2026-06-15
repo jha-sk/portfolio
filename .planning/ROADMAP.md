@@ -60,7 +60,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The hero displays "SOURABH JHA", the title "AI Engineer | Backend Engineer", and the building-scalable-systems tagline
   4. The hero background renders animated particles, aurora gradients, and floating light effects with subtle, GPU-friendly motion
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Hero slice: data-driven SOURABH JHA wordmark/title/tagline, animated aurora/blob/particle background, scroll cue (HERO-01, HERO-02)
+- [ ] 02-02-PLAN.md — Boot slice: zen brush-stroke wipe-reveal overlay, skip-on-any-input, once-per-session sessionStorage gate, reduced-motion bypass (BOOT-01, BOOT-02)
+
 **UI hint**: yes
 
 ### Phase 3: Dashboard & Dock Navigation
@@ -150,7 +155,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Design System | 2/2 | Complete    | 2026-06-15 |
-| 2. Boot & Hero Landing | 0/TBD | Not started | - |
+| 2. Boot & Hero Landing | 0/2 | Not started | - |
 | 3. Dashboard & Dock Navigation | 0/TBD | Not started | - |
 | 4. About & Skills | 0/TBD | Not started | - |
 | 5. Projects & Experience | 0/TBD | Not started | - |
