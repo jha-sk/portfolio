@@ -39,7 +39,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Walking Skeleton: Next.js+shadcn scaffold, dichromatic token system, theme toggle, motion wrapper, data-driven "System initialized" placeholder page (FND-01/02/03, MOT-01)
+- [x] 01-01-PLAN.md — Walking Skeleton: Next.js+shadcn scaffold, dichromatic token system, theme toggle, motion wrapper, data-driven "System initialized" placeholder page (FND-01/02/03, MOT-01)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -149,7 +149,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Design System | 0/2 | Not started | - |
+| 1. Foundation & Design System | 1/2 | In Progress|  |
 | 2. Boot & Hero Landing | 0/TBD | Not started | - |
 | 3. Dashboard & Dock Navigation | 0/TBD | Not started | - |
 | 4. About & Skills | 0/TBD | Not started | - |
