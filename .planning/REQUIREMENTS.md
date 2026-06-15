@@ -102,13 +102,46 @@ Which phases cover which requirements. Populated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be filled by roadmapper) | — | Pending |
+| FND-01 | Phase 1 | Pending |
+| FND-02 | Phase 1 | Pending |
+| FND-03 | Phase 1 | Pending |
+| FND-04 | Phase 1 | Pending |
+| FND-07 | Phase 1 | Pending |
+| MOT-01 | Phase 1 | Pending |
+| BOOT-01 | Phase 2 | Pending |
+| BOOT-02 | Phase 2 | Pending |
+| HERO-01 | Phase 2 | Pending |
+| HERO-02 | Phase 2 | Pending |
+| DASH-01 | Phase 3 | Pending |
+| DASH-02 | Phase 3 | Pending |
+| NAV-01 | Phase 3 | Pending |
+| NAV-02 | Phase 3 | Pending |
+| ABT-01 | Phase 4 | Pending |
+| ABT-02 | Phase 4 | Pending |
+| SKL-01 | Phase 4 | Pending |
+| SKL-02 | Phase 4 | Pending |
+| SKL-03 | Phase 4 | Pending |
+| PRJ-01 | Phase 5 | Pending |
+| PRJ-02 | Phase 5 | Pending |
+| PRJ-03 | Phase 5 | Pending |
+| PRJ-04 | Phase 5 | Pending |
+| PRJ-05 | Phase 5 | Pending |
+| EXP-01 | Phase 5 | Pending |
+| EXP-02 | Phase 5 | Pending |
+| TXC-01 | Phase 6 | Pending |
+| TXC-02 | Phase 6 | Pending |
+| TXC-03 | Phase 6 | Pending |
+| CMD-01 | Phase 6 | Pending |
+| CMD-02 | Phase 6 | Pending |
+| MOT-02 | Phase 6 | Pending |
+| FND-05 | Phase 7 | Pending |
+| FND-06 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 31 total
-- Mapped to phases: TBD
-- Unmapped: TBD
+- Mapped to phases: 31 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-06-16*
-*Last updated: 2026-06-16 after initial definition*
+*Last updated: 2026-06-16 after roadmap creation (7 phases, 31/31 mapped)*
