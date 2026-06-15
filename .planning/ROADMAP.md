@@ -13,7 +13,7 @@ This roadmap builds "Career OS" as a series of vertical MVP slices, each putting
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Foundation & Design System** - Scaffold, dichromatic tokens, theme toggle, responsive + data architecture, motion baseline
+- [x] **Phase 1: Foundation & Design System** - Scaffold, dichromatic tokens, theme toggle, responsive + data architecture, motion baseline (completed 2026-06-15)
 - [ ] **Phase 2: Boot & Hero Landing** - Zen brush-stroke boot reveal flowing into the premium animated hero
 - [ ] **Phase 3: Dashboard & Dock Navigation** - Glass stat cards and the floating glass dock replacing the navbar
 - [ ] **Phase 4: About & Skills** - Interactive expand-on-hover timeline and the floating technology constellation
@@ -43,7 +43,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-02-PLAN.md — Full per-domain data architecture + greppable placeholder convention, responsive baseline proof, staggered reduced-motion-safe reveals (FND-07/04, MOT-01)
+- [x] 01-02-PLAN.md — Full per-domain data architecture + greppable placeholder convention, responsive baseline proof, staggered reduced-motion-safe reveals (FND-07/04, MOT-01)
 
 **UI hint**: yes
 
@@ -149,7 +149,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Design System | 1/2 | In Progress|  |
+| 1. Foundation & Design System | 2/2 | Complete   | 2026-06-15 |
 | 2. Boot & Hero Landing | 0/TBD | Not started | - |
 | 3. Dashboard & Dock Navigation | 0/TBD | Not started | - |
 | 4. About & Skills | 0/TBD | Not started | - |
