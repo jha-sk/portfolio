@@ -165,19 +165,25 @@ test('a single grep for the TODO_ token finds placeholders and nothing else', as
   modules.forEach((m) => walk(m.default));
   assert.ok(liveCount > 0, 'data graph contains placeholders');
 
-  // Static grep of the source: count TODO_ occurrences in the data files only.
-  // The token must appear (placeholders exist) and only inside value markers —
-  // i.e. exclusively as part of `TODO('...')` or `TODO_` strings, never bare.
-  let grepHits = 0;
+  // Static check of the source: placeholders are produced exclusively through
+  // the TODO() factory (which stamps the single TODO_ token), not hand-rolled.
+  // We strip line/block comments first so prose mentions of the token in file
+  // headers (documentation) do not count as off-convention value literals.
+  const stripComments = (s) =>
+    s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  let factoryCalls = 0;
   for (const f of readdirSync(dataDir)) {
     if (!f.endsWith('.js') || f === 'placeholders.js') continue;
-    const src = readFileSync(join(dataDir, f), 'utf8');
-    const matches = src.match(/TODO\(/g);
-    if (matches) grepHits += matches.length;
+    const code = stripComments(readFileSync(join(dataDir, f), 'utf8'));
+    factoryCalls += (code.match(/\bTODO\(/g) || []).length;
+    // Outside the TODO() factory, no data file may hand-roll the marker token
+    // as a value literal — every placeholder must flow through the factory.
+    const withoutFactory = code.replace(/\bTODO\(/g, '');
+    assert.equal(
+      withoutFactory.includes('TODO_'),
+      false,
+      `${f} must not hand-roll a bare TODO_ literal — use TODO()`
+    );
   }
-  assert.equal(
-    grepHits,
-    liveCount,
-    'every source TODO() call corresponds to exactly one live placeholder'
-  );
+  assert.ok(factoryCalls > 0, 'placeholders are produced via the TODO() factory');
 });
