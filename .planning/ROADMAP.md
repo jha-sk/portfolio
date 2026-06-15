@@ -33,7 +33,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The dichromatic palette (`#020202` background, `#B2D5E5` primary) plus glass/gradient/glow tokens are defined once and consumable through Tailwind utilities
   4. Site content (identity, stats, projects, experience, skills, links) reads from editable in-repo data files seeded with known facts and clearly tagged TODO placeholders
   5. A shared section-reveal motion wrapper exists and animates a placeholder section smoothly, and the layout reflows cleanly across mobile, tablet, and desktop
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 01-01-PLAN.md — Walking Skeleton: Next.js+shadcn scaffold, dichromatic token system, theme toggle, motion wrapper, data-driven "System initialized" placeholder page (FND-01/02/03, MOT-01)
+- [ ] 01-02-PLAN.md — Full per-domain data architecture + greppable placeholder convention, responsive baseline proof, staggered reduced-motion-safe reveals (FND-07/04, MOT-01)
 **UI hint**: yes
 
 ### Phase 2: Boot & Hero Landing
@@ -120,7 +122,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Design System | 0/TBD | Not started | - |
+| 1. Foundation & Design System | 0/2 | Not started | - |
 | 2. Boot & Hero Landing | 0/TBD | Not started | - |
 | 3. Dashboard & Dock Navigation | 0/TBD | Not started | - |
 | 4. About & Skills | 0/TBD | Not started | - |
