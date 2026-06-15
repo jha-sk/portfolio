@@ -55,4 +55,5 @@ export function isPlaceholder(value) {
   );
 }
 
-export default { TODO, isPlaceholder, TODO_TOKEN };
+const placeholders = { TODO, isPlaceholder, TODO_TOKEN };
+export default placeholders;
