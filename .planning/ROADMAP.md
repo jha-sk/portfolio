@@ -61,9 +61,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The hero background renders animated particles, aurora gradients, and floating light effects with subtle, GPU-friendly motion
 
 **Plans**: 2 plans
-
 Plans:
+**Wave 1**
+
 - [ ] 02-01-PLAN.md — Hero slice: data-driven SOURABH JHA wordmark/title/tagline, animated aurora/blob/particle background, scroll cue (HERO-01, HERO-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 02-02-PLAN.md — Boot slice: zen brush-stroke wipe-reveal overlay, skip-on-any-input, once-per-session sessionStorage gate, reduced-motion bypass (BOOT-01, BOOT-02)
 
 **UI hint**: yes
