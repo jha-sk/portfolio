@@ -12,7 +12,10 @@ A visitor's first reaction is *"this is one of the most unique developer portfol
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Foundation & design system — Next.js (App Router, JavaScript) scaffold with Tailwind, Framer Motion, Lucide, ShadCN (New York); dichromatic token system (`#020202`/`#B2D5E5` + glass/gradient/glow) consumable via Tailwind. *Validated in Phase 1: Foundation & Design System.*
+- [x] Dark + light mode toggle (full light theme, dark-first) — `next-themes`, persisted, no flash. *Validated in Phase 1.*
+- [x] Responsive baseline across mobile / tablet / desktop — 1200px container, clean reflow, no horizontal scroll. *Validated in Phase 1 (baseline; each later section reuses it).*
+- [x] Content driven by an editable in-repo data config seeded with known info + tagged TODO placeholders for repos/stats/demos/resume — six per-domain files under `src/data/` with a greppable placeholder convention. *Validated in Phase 1.*
 
 ### Active
 
@@ -26,11 +29,8 @@ A visitor's first reaction is *"this is one of the most unique developer portfol
 - [ ] Experience: "Mission Logs" (role, description, technologies, achievements, timeline)
 - [ ] Command palette (Ctrl+K), Linear-style: nav actions, download resume, open GitHub/LinkedIn, contact, search
 - [ ] Transmission Center contact panel: Name/Email/Message form, "INITIATE TRANSMISSION" button, "Transmission Successful" state, scanning animation + glowing borders + terminal effects (front-end simulated, no backend send)
-- [ ] Dark + light mode toggle (full light theme, dark-first)
-- [ ] Framer Motion animation system: page transitions, parallax, mouse-follow glow, hover interactions, glass reflections, animated gradients, section reveals, floating particles — subtle, respects `prefers-reduced-motion`
-- [ ] Responsive across mobile / tablet / desktop
+- [ ] Framer Motion animation system — section-reveal baseline + reduced-motion gate **done in Phase 1**; remaining: page transitions, parallax, mouse-follow glow, glass reflections, animated gradients, floating particles (Phases 2/6)
 - [ ] 90+ Lighthouse score
-- [ ] Content driven by an editable data/content config seeded with known info + tagged placeholders for repos/stats/demos/resume
 
 ### Out of Scope
 
@@ -89,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-16 after initialization*
+*Last updated: 2026-06-16 after Phase 1 (Foundation & Design System) complete*
