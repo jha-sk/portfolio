@@ -3,6 +3,8 @@ import { Snapshot } from '@/components/sections/snapshot';
 import { About } from '@/components/sections/about';
 import { Skills } from '@/components/sections/skills';
 import { Experience } from '@/components/sections/experience';
+import { Projects } from '@/components/sections/projects';
+import { CertsEducation } from '@/components/sections/certs-education';
 
 /*
  * Home route — Career OS single-page layout.
@@ -24,6 +26,8 @@ export default function HomePage() {
       <About />
       <Skills />
       <Experience />
+      <Projects />
+      <CertsEducation />
     </>
   );
 }
