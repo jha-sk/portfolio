@@ -2,7 +2,8 @@ import './globals.css';
 
 import { ibmPlexSans, jetBrainsMono } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
-import { Dock } from '@/components/nav/dock';
+// Note: Dock is intentionally not rendered here — navigation is now the 3D HUD nav.
+// The dock component is preserved on disk at src/components/nav/dock.jsx for future reuse.
 
 export const metadata = {
   title: 'Sourabh Jha — AI Engineer · Backend Engineer',
@@ -24,7 +25,6 @@ export default function RootLayout({ children }) {
           'min-h-screen bg-background font-sans text-foreground antialiased'
         )}
       >
-        <Dock />
         <main>{children}</main>
       </body>
     </html>

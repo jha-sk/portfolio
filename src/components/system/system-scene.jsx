@@ -17,6 +17,7 @@
  *   • OrbitControls (auto-rotate + damping + zoom clamps)
  *   • Intro camera fly-in (~2.5 s lerp)
  *   • Hover-to-inspect node highlight
+ *   • Click-to-navigate: onSelect prop + camera fly-to on active change
  *
  * Token contract: raw hex only for Three.js color values (Three doesn't parse CSS vars).
  * DOM overlay (node labels via drei <Html>) uses CSS vars where possible.
@@ -73,6 +74,31 @@ const RACK_POSITIONS = RACK_CONFIGS.map(r => new THREE.Vector3(...r.position).se
 /* ── LED colour palette per unit (cycles) ───────────────────────────────── */
 const LED_PALETTE = [LED_GREEN, LED_GREEN, LED_AMBER, LED_ICE, LED_GREEN, LED_AMBER];
 
+/* ── Camera focus points per section ────────────────────────────────────── */
+// overview: target=[0,1.8,0], camera pulls back
+// about→core; skills→avg service-node cluster; projects→rack cluster; experience→db
+const NP = NODES_CONFIG.map(n => n.position);
+
+const SKILL_NODE_CLUSTER_CENTER = NP.slice(1, 6).reduce(
+  (acc, p) => [acc[0] + p[0] / 5, acc[1] + p[1] / 5, acc[2] + p[2] / 5],
+  [0, 0, 0]
+);
+
+const RACK_CLUSTER_CENTER = RACK_CONFIGS.reduce(
+  (acc, r) => [acc[0] + r.position[0] / 4, acc[1] + r.position[1] / 4 + 1.8, acc[2] + r.position[2] / 4],
+  [0, 0, 0]
+);
+
+const FOCUS_TARGETS = {
+  about:      { target: [0, 1.8, 0],               camOffset: [0, 3, 8]    },
+  skills:     { target: SKILL_NODE_CLUSTER_CENTER,  camOffset: [0, 5, 12]   },
+  projects:   { target: RACK_CLUSTER_CENTER,        camOffset: [0, 6, 14]   },
+  experience: { target: [0, 1.3, -7.5],             camOffset: [0, 4, 2]    },
+  contact:    { target: [0, 1.8, 0],               camOffset: [0, 3, 8]    },
+  // null / overview
+  overview:   { target: [0, 1.8, 0],               camOffset: [0, 7, 17]   },
+};
+
 /* ── Particles ───────────────────────────────────────────────────────────── */
 function Particles() {
   const ref = useRef();
@@ -127,10 +153,27 @@ function RadarRing() {
 }
 
 /* ── Core (identity icosahedron) ─────────────────────────────────────────── */
-function Core() {
+function Core({ onSelect }) {
   const coreRef = useRef();
   const glowRef = useRef();
   const shellRef = useRef();
+  const [hovered, setHovered] = useState(false);
+
+  const handleOver = useCallback((e) => {
+    e.stopPropagation();
+    setHovered(true);
+    document.body.style.cursor = 'pointer';
+  }, []);
+
+  const handleOut = useCallback(() => {
+    setHovered(false);
+    document.body.style.cursor = 'grab';
+  }, []);
+
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();
+    onSelect?.('about');
+  }, [onSelect]);
 
   useFrame((state, dt) => {
     if (coreRef.current) {
@@ -149,14 +192,19 @@ function Core() {
   return (
     <group position={[0, 1.8, 0]}>
       {/* solid emissive core — bright focal point */}
-      <mesh ref={coreRef}>
+      <mesh
+        ref={coreRef}
+        onPointerOver={handleOver}
+        onPointerOut={handleOut}
+        onClick={handleClick}
+      >
         <icosahedronGeometry args={[1.3, 1]} />
         <meshStandardMaterial
           color={CYAN_BRIGHT}
           emissive={CYAN_EMIS}
-          emissiveIntensity={1.4}
-          roughness={0.35}
-          metalness={0.2}
+          emissiveIntensity={hovered ? 0.8 : 0.4}
+          roughness={0.4}
+          metalness={0.25}
         />
       </mesh>
       {/* outer wireframe shell */}
@@ -167,18 +215,18 @@ function Core() {
       {/* bloom glow volume */}
       <mesh ref={glowRef}>
         <icosahedronGeometry args={[2.1, 1]} />
-        <meshBasicMaterial color={CYAN_EMIS} transparent opacity={0.05} />
+        <meshBasicMaterial color={CYAN_EMIS} transparent opacity={0.015} />
       </mesh>
       {/* tracked label */}
       <Html position={[0, 1.6, 0]} center distanceFactor={18} zIndexRange={[10, 0]}>
-        <span className="node-label">core</span>
+        <span className={`node-label${hovered ? ' node-label--hot' : ''}`}>core</span>
       </Html>
     </group>
   );
 }
 
 /* ── ServiceNode ─────────────────────────────────────────────────────────── */
-function ServiceNode({ config, index }) {
+function ServiceNode({ config, index, onSelect }) {
   const ref = useRef();
   const [hovered, setHovered] = useState(false);
 
@@ -192,6 +240,11 @@ function ServiceNode({ config, index }) {
     setHovered(false);
     document.body.style.cursor = 'grab';
   }, []);
+
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();
+    onSelect?.('skills');
+  }, [onSelect]);
 
   useFrame((state, dt) => {
     if (!ref.current) return;
@@ -207,6 +260,7 @@ function ServiceNode({ config, index }) {
         ref={ref}
         onPointerOver={handleOver}
         onPointerOut={handleOut}
+        onClick={handleClick}
       >
         <octahedronGeometry args={[0.5]} />
         <meshStandardMaterial
@@ -227,25 +281,50 @@ function ServiceNode({ config, index }) {
 }
 
 /* ── Rack ────────────────────────────────────────────────────────────────── */
-function Rack({ config }) {
+function Rack({ config, onSelect }) {
   const [x, , z] = config.position;
   const rotY = Math.atan2(-x, -z);
+  const [hovered, setHovered] = useState(false);
+
+  const handleOver = useCallback((e) => {
+    e.stopPropagation();
+    setHovered(true);
+    document.body.style.cursor = 'pointer';
+  }, []);
+
+  const handleOut = useCallback(() => {
+    setHovered(false);
+    document.body.style.cursor = 'grab';
+  }, []);
+
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();
+    onSelect?.('projects');
+  }, [onSelect]);
 
   return (
-    <group position={config.position} rotation={[0, rotY, 0]}>
+    <group
+      position={config.position}
+      rotation={[0, rotY, 0]}
+      onPointerOver={handleOver}
+      onPointerOut={handleOut}
+      onClick={handleClick}
+    >
       {/* solid metallic cabinet body */}
       <mesh position={[0, 1.8, 0]}>
         <boxGeometry args={[2.4, 3.6, 1.4]} />
         <meshStandardMaterial
-          color="#0d1b22"
+          color={hovered ? '#132530' : '#0d1b22'}
           metalness={0.6}
           roughness={0.4}
+          emissive={hovered ? '#1a3040' : '#000000'}
+          emissiveIntensity={hovered ? 0.3 : 0}
         />
       </mesh>
       {/* subtle ice-blue edge outline */}
       <lineSegments position={[0, 1.8, 0]}>
         <edgesGeometry args={[new THREE.BoxGeometry(2.4, 3.6, 1.4)]} />
-        <lineBasicMaterial color={EDGE_ICE} transparent opacity={0.45} />
+        <lineBasicMaterial color={EDGE_ICE} transparent opacity={hovered ? 0.75 : 0.45} />
       </lineSegments>
       {/* status LED unit strips */}
       {Array.from({ length: 6 }, (_, i) => {
@@ -271,29 +350,51 @@ function Rack({ config }) {
       })}
       {/* label above rack */}
       <Html position={[0, 3.9, 0]} center distanceFactor={22} zIndexRange={[5, 0]}>
-        <span className="node-label node-label--dim">{config.name}</span>
+        <span className={`node-label${hovered ? ' node-label--hot' : ' node-label--dim'}`}>{config.name}</span>
       </Html>
     </group>
   );
 }
 
 /* ── Database cylinder ───────────────────────────────────────────────────── */
-function Database() {
+function Database({ onSelect }) {
   const bodyRef = useRef();
+  const [hovered, setHovered] = useState(false);
+
+  const handleOver = useCallback((e) => {
+    e.stopPropagation();
+    setHovered(true);
+    document.body.style.cursor = 'pointer';
+  }, []);
+
+  const handleOut = useCallback(() => {
+    setHovered(false);
+    document.body.style.cursor = 'grab';
+  }, []);
+
+  const handleClick = useCallback((e) => {
+    e.stopPropagation();
+    onSelect?.('experience');
+  }, [onSelect]);
 
   useFrame((_, dt) => {
     if (bodyRef.current) bodyRef.current.rotation.y += dt * 0.25;
   });
 
   return (
-    <group position={[0, 0, -7.5]}>
+    <group
+      position={[0, 0, -7.5]}
+      onPointerOver={handleOver}
+      onPointerOut={handleOut}
+      onClick={handleClick}
+    >
       {/* solid cylinder body */}
       <mesh ref={bodyRef} position={[0, 1.3, 0]}>
         <cylinderGeometry args={[1.1, 1.1, 1.8, 28, 1, false]} />
         <meshStandardMaterial
           color={DB_COLOR}
           emissive={DB_EMIS}
-          emissiveIntensity={0.9}
+          emissiveIntensity={hovered ? 1.6 : 0.9}
           roughness={0.4}
           metalness={0.3}
         />
@@ -307,7 +408,7 @@ function Database() {
       ))}
       {/* label */}
       <Html position={[0, 3.1, 0]} center distanceFactor={18} zIndexRange={[10, 0]}>
-        <span className="node-label node-label--dim">postgres</span>
+        <span className={`node-label${hovered ? ' node-label--hot' : ' node-label--dim'}`}>postgres</span>
       </Html>
     </group>
   );
@@ -360,26 +461,26 @@ function Packet({ start, end, speed, bright = false }) {
 const CORE_POS = [0, 1.8, 0];
 const DB_POS   = [0, 1.3, -7.5];
 
-const NP = NODES_CONFIG.map(n => n.position);
+const NP_EDGES = NODES_CONFIG.map(n => n.position);
 
 const EDGE_DEFS = [
   // request spine (bright)
-  { start: NP[0], end: NP[1],      bright: true,  packet: true },
-  { start: NP[1], end: CORE_POS,   bright: true,  packet: true },
+  { start: NP_EDGES[0], end: NP_EDGES[1],      bright: true,  packet: true },
+  { start: NP_EDGES[1], end: CORE_POS,   bright: true,  packet: true },
   // core → services
-  { start: CORE_POS, end: NP[2],   bright: false, packet: true },
-  { start: CORE_POS, end: NP[3],   bright: false, packet: true },
-  { start: CORE_POS, end: NP[4],   bright: false, packet: true },
-  { start: CORE_POS, end: NP[5],   bright: false, packet: true },
+  { start: CORE_POS, end: NP_EDGES[2],   bright: false, packet: true },
+  { start: CORE_POS, end: NP_EDGES[3],   bright: false, packet: true },
+  { start: CORE_POS, end: NP_EDGES[4],   bright: false, packet: true },
+  { start: CORE_POS, end: NP_EDGES[5],   bright: false, packet: true },
   // services → db
-  { start: NP[2], end: DB_POS,     bright: false, packet: true },
-  { start: NP[4], end: DB_POS,     bright: false, packet: true },
+  { start: NP_EDGES[2], end: DB_POS,     bright: false, packet: true },
+  { start: NP_EDGES[4], end: DB_POS,     bright: false, packet: true },
   { start: CORE_POS, end: DB_POS,  bright: true,  packet: true },
 ];
 
 // services → nearest rack (alternating)
 const RACK_EDGES = [2, 3, 4, 5].map((ni, k) => ({
-  start: NP[ni],
+  start: NP_EDGES[ni],
   end: RACK_POSITIONS[k % RACK_POSITIONS.length],
   bright: false,
   packet: k % 2 === 0,
@@ -422,6 +523,48 @@ function CameraRig() {
   return null;
 }
 
+/* ── Camera fly-to on active section ────────────────────────────────────── */
+const _tmpTarget = new THREE.Vector3();
+const _tmpCamPos = new THREE.Vector3();
+
+function CameraFlyTo({ active, controlsRef }) {
+  const { camera } = useThree();
+
+  useFrame((_, dt) => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+
+    const key = active ?? 'overview';
+    const focus = FOCUS_TARGETS[key] ?? FOCUS_TARGETS.overview;
+
+    // Build desired target and camera position
+    _tmpTarget.set(...focus.target);
+    const [ox, oy, oz] = focus.camOffset;
+    _tmpCamPos.set(
+      focus.target[0] + ox,
+      focus.target[1] + oy,
+      focus.target[2] + oz
+    );
+
+    const speed = dt * 2.2;
+
+    // Lerp controls target
+    controls.target.lerp(_tmpTarget, speed);
+
+    // Lerp camera position only when a section is active (give user freedom when overview)
+    if (active) {
+      camera.position.lerp(_tmpCamPos, speed);
+    }
+
+    controls.update();
+
+    // Disable autoRotate while a panel is open
+    controls.autoRotate = !active;
+  });
+
+  return null;
+}
+
 /* ── Grid floor with visible opacity ─────────────────────────────────────── */
 function GridFloor() {
   const ref = useRef();
@@ -446,7 +589,9 @@ function GridFloor() {
 }
 
 /* ── Full scene graph ────────────────────────────────────────────────────── */
-function SceneGraph() {
+function SceneGraph({ onSelect, active }) {
+  const controlsRef = useRef();
+
   return (
     <>
       <fog attach="fog" args={[VOID, 60, 240]} />
@@ -459,22 +604,24 @@ function SceneGraph() {
       <GridFloor />
       <Particles />
       <RadarRing />
-      <Core />
+      <Core onSelect={onSelect} />
 
       {NODES_CONFIG.map((cfg, i) => (
-        <ServiceNode key={cfg.name} config={cfg} index={i} />
+        <ServiceNode key={cfg.name} config={cfg} index={i} onSelect={onSelect} />
       ))}
 
       {RACK_CONFIGS.map(cfg => (
-        <Rack key={cfg.name} config={cfg} />
+        <Rack key={cfg.name} config={cfg} onSelect={onSelect} />
       ))}
 
-      <Database />
+      <Database onSelect={onSelect} />
       <EdgesAndPackets />
 
       <CameraRig />
+      <CameraFlyTo active={active} controlsRef={controlsRef} />
 
       <OrbitControls
+        ref={controlsRef}
         enableDamping
         dampingFactor={0.06}
         autoRotate
@@ -488,11 +635,11 @@ function SceneGraph() {
 
       <EffectComposer>
         <Bloom
-          luminanceThreshold={0.2}
-          luminanceSmoothing={0.82}
+          luminanceThreshold={0.34}
+          luminanceSmoothing={0.85}
           mipmapBlur
-          intensity={0.8}
-          radius={0.6}
+          intensity={0.42}
+          radius={0.55}
         />
       </EffectComposer>
     </>
@@ -500,17 +647,18 @@ function SceneGraph() {
 }
 
 /* ── Canvas export ───────────────────────────────────────────────────────── */
-export default function SystemScene() {
+export default function SystemScene({ onSelect, active }) {
   return (
     <>
       {/* Node label styles — scoped via a style tag in the canvas wrapper */}
       <style>{`
         .node-label {
           font-family: var(--font-jetbrains-mono, 'JetBrains Mono', monospace);
-          font-size: 10px;
-          letter-spacing: 0.12em;
+          font-size: 11px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
-          color: rgba(178,213,229,0.75);
+          color: #eaf6fb;
           white-space: nowrap;
           text-shadow: 0 0 10px rgba(178,213,229,0.5);
           pointer-events: none;
@@ -533,7 +681,7 @@ export default function SystemScene() {
           gl.setClearColor(0x020202, 1);
         }}
       >
-        <SceneGraph />
+        <SceneGraph onSelect={onSelect} active={active} />
       </Canvas>
     </>
   );

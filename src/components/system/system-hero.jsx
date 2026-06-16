@@ -9,20 +9,37 @@
  *   • Reduced motion: stays on <SystemFallback> indefinitely (static, no animation).
  *   • HUD overlay (pointer-events-none) is real DOM so name/role are in the page for crawlers.
  *
+ * Click-to-navigate:
+ *   • `active` state (section id | null) is lifted here.
+ *   • Passed to SystemScene (camera fly-to) and SectionPanel (glass drawer).
+ *   • HUD nav buttons provide keyboard/mouse access to all sections incl. Contact.
+ *
  * Dichromatic contract: CSS vars only in DOM layer; ICE hex only in Three.js layer (in system-scene).
  */
 
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useReducedMotion } from 'framer-motion';
 import { identity } from '@/data/identity';
 import { stats } from '@/data/stats';
+import { links } from '@/data/links';
 import { SystemFallback } from './system-fallback';
+import { SectionPanel } from './section-panel';
 
 /* Lazy-load the Canvas — never SSR'd (WebGL requires browser) */
 const SystemScene = dynamic(() => import('./system-scene'), {
   ssr: false,
   loading: () => <SystemFallback />,
 });
+
+/* ── HUD nav sections ────────────────────────────────────────────────────── */
+const NAV_SECTIONS = [
+  { id: 'about',      label: 'About'      },
+  { id: 'skills',     label: 'Skills'     },
+  { id: 'projects',   label: 'Projects'   },
+  { id: 'experience', label: 'Experience' },
+  { id: 'contact',    label: 'Contact'    },
+];
 
 /* ── HUD Overlay ─────────────────────────────────────────────────────────── */
 
@@ -83,12 +100,13 @@ function HudCenter() {
 
       {/* SEO-critical: name + title in real DOM, always rendered */}
       <h1
-        className="mt-2 font-sans font-bold uppercase leading-none"
+        className="mt-2 font-sans uppercase leading-none"
         style={{
-          fontSize: 'clamp(28px,5vw,52px)',
-          letterSpacing: '0.02em',
-          color: 'var(--fg)',
-          textShadow: '0 0 30px rgba(178,213,229,0.6), 0 8px 22px rgba(0,0,0,0.7)',
+          fontSize: 'clamp(30px,5.4vw,56px)',
+          fontWeight: 700,
+          letterSpacing: '0.03em',
+          color: '#eaf6fb',
+          textShadow: '0 0 22px rgba(178,213,229,0.4), 0 8px 22px rgba(0,0,0,0.7)',
         }}
       >
         {identity.name}
@@ -109,16 +127,130 @@ function HudHint() {
     <p
       className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 text-center font-mono text-[11px] tracking-[0.1em]"
       style={{ color: 'rgba(178,213,229,0.4)', pointerEvents: 'none' }}
-      aria-label="Interaction hint: drag to orbit, scroll to zoom, hover a node"
+      aria-label="Interaction hint: drag to orbit, scroll to zoom, click a node to explore"
     >
-      drag to orbit · scroll to zoom · hover a node
+      drag to orbit · scroll to zoom · click a node
     </p>
+  );
+}
+
+/* ── HUD Nav (bottom-center) ─────────────────────────────────────────────── */
+function HudNav({ active, onSelect }) {
+  return (
+    <nav
+      aria-label="Career OS navigation"
+      className="absolute bottom-24 left-1/2 z-20 -translate-x-1/2"
+      style={{ pointerEvents: 'auto' }}
+    >
+      <ul
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          gap: '6px',
+          listStyle: 'none',
+          margin: 0,
+          padding: 0,
+        }}
+      >
+        {NAV_SECTIONS.map(({ id, label }) => {
+          const isActive = active === id;
+          return (
+            <li key={id}>
+              <button
+                onClick={() => onSelect(id)}
+                aria-current={isActive ? 'page' : undefined}
+                style={{
+                  fontFamily: 'var(--font-jetbrains-mono, monospace)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  padding: '5px 12px',
+                  borderRadius: '4px',
+                  border: `1px solid ${isActive ? 'rgba(178,213,229,0.55)' : 'rgba(178,213,229,0.18)'}`,
+                  background: isActive ? 'rgba(178,213,229,0.1)' : 'transparent',
+                  color: isActive ? '#eaf6fb' : 'rgba(178,213,229,0.55)',
+                  cursor: 'pointer',
+                  transition: 'color 0.15s, border-color 0.15s, background 0.15s',
+                  outline: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = '#eaf6fb';
+                    e.currentTarget.style.borderColor = 'rgba(178,213,229,0.45)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.color = 'rgba(178,213,229,0.55)';
+                    e.currentTarget.style.borderColor = 'rgba(178,213,229,0.18)';
+                  }
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.outline = '2px solid rgba(178,213,229,0.6)';
+                  e.currentTarget.style.outlineOffset = '2px';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.outline = 'none';
+                }}
+              >
+                {label}
+              </button>
+            </li>
+          );
+        })}
+
+        {/* Résumé download link */}
+        <li>
+          <a
+            href={links.resume}
+            download
+            style={{
+              fontFamily: 'var(--font-jetbrains-mono, monospace)',
+              fontSize: '10px',
+              fontWeight: 700,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              padding: '5px 12px',
+              borderRadius: '4px',
+              border: '1px solid rgba(178,213,229,0.35)',
+              background: 'rgba(178,213,229,0.06)',
+              color: '#B2D5E5',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              display: 'inline-block',
+              transition: 'color 0.15s, border-color 0.15s, background 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#eaf6fb';
+              e.currentTarget.style.borderColor = 'rgba(178,213,229,0.7)';
+              e.currentTarget.style.background = 'rgba(178,213,229,0.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#B2D5E5';
+              e.currentTarget.style.borderColor = 'rgba(178,213,229,0.35)';
+              e.currentTarget.style.background = 'rgba(178,213,229,0.06)';
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.outline = '2px solid rgba(178,213,229,0.6)';
+              e.currentTarget.style.outlineOffset = '2px';
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.outline = 'none';
+            }}
+          >
+            Résumé ↓
+          </a>
+        </li>
+      </ul>
+    </nav>
   );
 }
 
 /* ── Client canvas guard ──────────────────────────────────────────────────── */
 
-function CanvasOrFallback() {
+function CanvasOrFallback({ active, onSelect }) {
   const prefersReducedMotion = useReducedMotion();
 
   if (prefersReducedMotion) {
@@ -127,7 +259,7 @@ function CanvasOrFallback() {
 
   return (
     <div className="absolute inset-0">
-      <SystemScene />
+      <SystemScene active={active} onSelect={onSelect} />
     </div>
   );
 }
@@ -135,6 +267,8 @@ function CanvasOrFallback() {
 /* ── SystemHero export ───────────────────────────────────────────────────── */
 
 export function SystemHero() {
+  const [active, setActive] = useState(null);
+
   return (
     <section
       id="hero"
@@ -143,13 +277,17 @@ export function SystemHero() {
       aria-label="Career OS system topology — interactive 3D landing"
     >
       {/* Canvas (lazy, client-only, replaced by fallback during load/reduced-motion) */}
-      <CanvasOrFallback />
+      <CanvasOrFallback active={active} onSelect={setActive} />
 
       {/* HUD overlay — pointer-events-none DOM layer (SSR'd for SEO) */}
       <HudTopLeft />
       <HudTopRight />
       <HudCenter />
+      <HudNav active={active} onSelect={setActive} />
       <HudHint />
+
+      {/* Glass section panel — slides in from right when a section is active */}
+      <SectionPanel active={active} onClose={() => setActive(null)} />
     </section>
   );
 }
