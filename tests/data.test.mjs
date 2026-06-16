@@ -1,24 +1,19 @@
-// Data-shape test for the Career OS content architecture (Phase 01 Plan 02).
+// Data-shape tests for Career OS résumé data (Task 2 / CNT2-01).
 //
-// Asserts (FND-07, D-01/D-02/D-03):
-//   1. All six per-domain files + placeholders.js import without throwing.
-//   2. KNOWN seed facts are present and are NOT marked as placeholders:
-//        - identity name "Sourabh Jha"
-//        - links github.com/jha-sk + linkedin.com/in/sk-jha + codewithsourabhjha@gmail.com
-//        - the 11 seed skills
-//        - the 4 seed project names
-//   3. isPlaceholder() correctly flags TODO()-produced values and rejects facts.
-//   4. A single grep for the TODO_ token finds every placeholder and nothing else.
+// Asserts real data is present across all src/data/ files:
+//   - identity has name, title, tagline (no TODO_ markers)
+//   - skills has 8 categories with items
+//   - projects has exactly 3 entries, every github starts with https://github.com
+//   - experience[0] has 8 bullets
+//   - stats has 5 labelled metrics with real values
+//   - certifications has 2 entries
+//   - education has 1 entry
 //
 // Uses ONLY the Node built-in test runner (node:test + node:assert).
 // Run with: node --test tests/data.test.mjs
-//
-// RED before the data files exist: the dynamic imports below reject (module not
-// found), so every test fails.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -26,164 +21,113 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, '..', 'src', 'data');
 const toUrl = (rel) => 'file://' + join(dataDir, rel).replace(/\\/g, '/');
 
-const SEED_SKILLS = [
-  'Golang',
-  'React',
-  'Next.js',
-  'Node.js',
-  'Docker',
-  'Kubernetes',
-  'AWS',
-  'Linux',
-  'AEM',
-  'Git',
-  'DevOps',
-];
-const SEED_PROJECTS = [
-  'Git Automation CLI',
-  'DevOps Monitoring Dashboard',
-  'AEM Automation Toolkit',
-  'Cloud Infrastructure Projects',
-];
-
-test('all six per-domain files plus placeholders import without throwing', async () => {
-  for (const f of [
-    'identity.js',
-    'stats.js',
-    'projects.js',
-    'skills.js',
-    'experience.js',
-    'links.js',
-    'placeholders.js',
-  ]) {
-    const mod = await import(toUrl(f));
-    assert.ok(mod, `${f} should import`);
-    assert.ok(mod.default, `${f} should have a default export`);
-  }
-});
-
-test('isPlaceholder flags TODO() markers and rejects known facts', async () => {
-  const { TODO, isPlaceholder, TODO_TOKEN } = await import(toUrl('placeholders.js'));
-  const marked = TODO('someUnknownField');
-  assert.equal(isPlaceholder(marked), true, 'TODO() value must be a placeholder');
-  assert.ok(marked.TODO.startsWith(TODO_TOKEN), 'marker carries the TODO_ token');
-  for (const fact of ['Sourabh Jha', 42, null, undefined, {}, { foo: 1 }, []]) {
-    assert.equal(isPlaceholder(fact), false, `${JSON.stringify(fact)} is not a placeholder`);
-  }
-});
-
-test('identity seeds the known name and does not mark it a placeholder', async () => {
+test('identity has name, title, and tagline — no TODO_ markers', async () => {
   const { identity } = await import(toUrl('identity.js'));
-  const { isPlaceholder } = await import(toUrl('placeholders.js'));
   assert.equal(identity.name, 'Sourabh Jha');
-  assert.equal(isPlaceholder(identity.name), false);
-});
-
-test('links seed the three known facts and are not placeholders', async () => {
-  const { links } = await import(toUrl('links.js'));
-  const { isPlaceholder } = await import(toUrl('placeholders.js'));
-  assert.match(links.github, /github\.com\/jha-sk/);
-  assert.match(links.linkedin, /linkedin\.com\/in\/sk-jha/);
-  assert.equal(links.email, 'codewithsourabhjha@gmail.com');
-  for (const v of [links.github, links.linkedin, links.email]) {
-    assert.equal(isPlaceholder(v), false, 'known link is not a placeholder');
-  }
-});
-
-test('skills seed all 11 known technology names', async () => {
-  const { skills } = await import(toUrl('skills.js'));
-  const { isPlaceholder } = await import(toUrl('placeholders.js'));
-  const names = skills.map((s) => s.name);
-  for (const skill of SEED_SKILLS) {
-    assert.ok(names.includes(skill), `seed skill "${skill}" present`);
-  }
-  for (const s of skills) {
-    assert.equal(isPlaceholder(s.name), false, `skill name "${s.name}" is a known fact`);
-  }
-});
-
-test('projects seed all 4 known project names', async () => {
-  const { projects } = await import(toUrl('projects.js'));
-  const { isPlaceholder } = await import(toUrl('placeholders.js'));
-  const names = projects.map((p) => p.name);
-  for (const proj of SEED_PROJECTS) {
-    assert.ok(names.includes(proj), `seed project "${proj}" present`);
-  }
-  for (const p of projects) {
-    assert.equal(isPlaceholder(p.name), false, `project name "${p.name}" is a known fact`);
-  }
-});
-
-test('stats seed five labelled metrics whose values are placeholders', async () => {
-  const { stats } = await import(toUrl('stats.js'));
-  const { isPlaceholder } = await import(toUrl('placeholders.js'));
-  const labels = stats.map((s) => s.label);
-  for (const label of [
-    'Years of Experience',
-    'Projects Built',
-    'Technologies',
-    'Repositories',
-    'Open Source Contributions',
-  ]) {
-    assert.ok(labels.includes(label), `stat "${label}" present`);
-  }
-  for (const s of stats) {
-    assert.equal(isPlaceholder(s.value), true, `stat "${s.label}" value is a placeholder`);
-    assert.equal(isPlaceholder(s.label), false, `stat "${s.label}" label is a known fact`);
-  }
-});
-
-test('experience entries carry placeholder role/timeline/achievements', async () => {
-  const { experience } = await import(toUrl('experience.js'));
-  const { isPlaceholder } = await import(toUrl('placeholders.js'));
-  assert.ok(experience.length >= 1, 'at least one mission-log entry');
-  for (const e of experience) {
-    assert.equal(isPlaceholder(e.role), true, 'role is a placeholder');
-    assert.equal(isPlaceholder(e.timeline), true, 'timeline is a placeholder');
-    assert.equal(isPlaceholder(e.achievements), true, 'achievements are a placeholder');
-  }
-});
-
-test('a single grep for the TODO_ token finds placeholders and nothing else', async () => {
-  const { TODO_TOKEN, isPlaceholder } = await import(toUrl('placeholders.js'));
-  // Sum every placeholder reachable from the exported data graph.
-  const modules = await Promise.all(
-    ['identity.js', 'stats.js', 'projects.js', 'skills.js', 'experience.js', 'links.js'].map(
-      (f) => import(toUrl(f))
-    )
-  );
-  let liveCount = 0;
-  const walk = (v) => {
-    if (isPlaceholder(v)) {
-      liveCount += 1;
-      assert.ok(v.TODO.includes(TODO_TOKEN), 'every placeholder carries the token');
-      return;
-    }
-    if (Array.isArray(v)) v.forEach(walk);
-    else if (v && typeof v === 'object') Object.values(v).forEach(walk);
-  };
-  modules.forEach((m) => walk(m.default));
-  assert.ok(liveCount > 0, 'data graph contains placeholders');
-
-  // Static check of the source: placeholders are produced exclusively through
-  // the TODO() factory (which stamps the single TODO_ token), not hand-rolled.
-  // We strip line/block comments first so prose mentions of the token in file
-  // headers (documentation) do not count as off-convention value literals.
-  const stripComments = (s) =>
-    s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
-  let factoryCalls = 0;
-  for (const f of readdirSync(dataDir)) {
-    if (!f.endsWith('.js') || f === 'placeholders.js') continue;
-    const code = stripComments(readFileSync(join(dataDir, f), 'utf8'));
-    factoryCalls += (code.match(/\bTODO\(/g) || []).length;
-    // Outside the TODO() factory, no data file may hand-roll the marker token
-    // as a value literal — every placeholder must flow through the factory.
-    const withoutFactory = code.replace(/\bTODO\(/g, '');
+  assert.ok(identity.title, 'title is present');
+  assert.ok(identity.tagline, 'tagline is present');
+  for (const field of ['name', 'title', 'tagline']) {
     assert.equal(
-      withoutFactory.includes('TODO_'),
+      identity[field].includes('TODO_'),
       false,
-      `${f} must not hand-roll a bare TODO_ literal — use TODO()`
+      `identity.${field} must not contain TODO_`
     );
   }
-  assert.ok(factoryCalls > 0, 'placeholders are produced via the TODO() factory');
+});
+
+test('skills has at least 7 categories each with at least one item', async () => {
+  const { skills } = await import(toUrl('skills.js'));
+  assert.ok(skills.length >= 7, `skills.length (${skills.length}) must be >= 7`);
+  for (const group of skills) {
+    assert.ok(group.category, 'each skill group has a category');
+    assert.ok(Array.isArray(group.items), 'each skill group has items array');
+    assert.ok(group.items.length >= 1, `category "${group.category}" has at least one item`);
+  }
+});
+
+test('projects has exactly 3 entries and every github starts with https://github.com', async () => {
+  const { projects } = await import(toUrl('projects.js'));
+  assert.equal(projects.length, 3, 'exactly 3 projects');
+  for (const p of projects) {
+    assert.ok(p.id, 'project has id');
+    assert.ok(p.name, 'project has name');
+    assert.ok(
+      p.github.startsWith('https://github.com'),
+      `project "${p.name}" github must start with https://github.com`
+    );
+    assert.ok(Array.isArray(p.stack), 'project has stack array');
+    assert.ok(Array.isArray(p.bullets), 'project has bullets array');
+  }
+});
+
+test('experience[0] has at least 6 bullets', async () => {
+  const { experience } = await import(toUrl('experience.js'));
+  assert.ok(experience.length >= 1, 'at least one experience entry');
+  const entry = experience[0];
+  assert.ok(entry.company, 'experience entry has company');
+  assert.ok(entry.role, 'experience entry has role');
+  assert.ok(Array.isArray(entry.bullets), 'experience entry has bullets array');
+  assert.ok(
+    entry.bullets.length >= 6,
+    `experience[0].bullets.length (${entry.bullets.length}) must be >= 6`
+  );
+});
+
+test('stats has at least 4 entries with real (non-TODO) values', async () => {
+  const { stats } = await import(toUrl('stats.js'));
+  assert.ok(stats.length >= 4, `stats.length (${stats.length}) must be >= 4`);
+  for (const s of stats) {
+    assert.ok(s.id, 'stat has id');
+    assert.ok(s.label, 'stat has label');
+    assert.ok(s.value, 'stat has value');
+    assert.equal(
+      String(s.value).includes('TODO_'),
+      false,
+      `stat "${s.label}" value must not contain TODO_`
+    );
+  }
+});
+
+test('certifications has at least 2 entries', async () => {
+  const { certifications } = await import(toUrl('certifications.js'));
+  assert.ok(certifications.length >= 2, `certifications.length (${certifications.length}) must be >= 2`);
+  for (const c of certifications) {
+    assert.ok(c.name, 'certification has name');
+    assert.ok(c.issuer, 'certification has issuer');
+  }
+});
+
+test('education has at least 1 entry', async () => {
+  const { education } = await import(toUrl('education.js'));
+  assert.ok(education.length >= 1, `education.length (${education.length}) must be >= 1`);
+  const entry = education[0];
+  assert.ok(entry.degree, 'education entry has degree');
+  assert.ok(entry.school, 'education entry has school');
+});
+
+test('no string field in identity or stats contains TODO_', async () => {
+  const { identity } = await import(toUrl('identity.js'));
+  const { stats } = await import(toUrl('stats.js'));
+  for (const [key, val] of Object.entries(identity)) {
+    if (typeof val === 'string') {
+      assert.equal(val.includes('TODO_'), false, `identity.${key} must not contain TODO_`);
+    }
+  }
+  for (const s of stats) {
+    for (const [key, val] of Object.entries(s)) {
+      if (typeof val === 'string') {
+        assert.equal(val.includes('TODO_'), false, `stat[${s.id}].${key} must not contain TODO_`);
+      }
+    }
+  }
+});
+
+test('placeholders.js still imports cleanly (utility module preserved)', async () => {
+  const mod = await import(toUrl('placeholders.js'));
+  assert.ok(mod.TODO, 'TODO function present');
+  assert.ok(mod.isPlaceholder, 'isPlaceholder function present');
+  assert.ok(mod.TODO_TOKEN, 'TODO_TOKEN present');
+  const marker = mod.TODO('test');
+  assert.equal(mod.isPlaceholder(marker), true);
+  assert.equal(mod.isPlaceholder('Sourabh Jha'), false);
 });

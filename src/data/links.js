@@ -1,17 +1,12 @@
 /*
- * Career OS content data — external links (D-01 / D-02).
- *
- * KNOWN facts from PROJECT.md (public profiles + published contact email).
- * `resume` is a placeholder: the PDF is dropped into /public later (CNT2-01).
- * See ./README.md for the placeholder convention.
+ * Career OS content data — external links.
  */
-import { TODO } from './placeholders.js';
-
 export const links = {
-  github: 'https://github.com/jha-sk',
-  linkedin: 'https://linkedin.com/in/sk-jha',
   email: 'codewithsourabhjha@gmail.com',
-  resume: TODO('resumePdfPath'),
+  phone: '+91 76939 03439',
+  github: 'https://github.com/jha-sk',
+  linkedin: 'https://www.linkedin.com/in/sk-jha',
+  resume: '/Sourabh-Jha-Resume.pdf',
 };
 
 export default links;

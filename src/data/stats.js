@@ -1,23 +1,12 @@
 /*
- * Career OS content data — dashboard stats (D-01 / D-02).
- *
- * Five labelled metrics for the dashboard cards (DASH-01). The labels and the
- * optional `unit` suffix are KNOWN; the numeric VALUES are placeholders until
- * filled with real figures (CNT2-01). See ./README.md for the convention.
+ * Career OS content data — dashboard telemetry stats.
  */
-import { TODO } from './placeholders.js';
-
 export const stats = [
-  { id: 'years', label: 'Years of Experience', value: TODO('yearsOfExperience'), unit: '+' },
-  { id: 'projects', label: 'Projects Built', value: TODO('projectsBuilt'), unit: '+' },
-  { id: 'technologies', label: 'Technologies', value: TODO('technologiesCount'), unit: '+' },
-  { id: 'repositories', label: 'Repositories', value: TODO('repositoriesCount'), unit: '' },
-  {
-    id: 'oss',
-    label: 'Open Source Contributions',
-    value: TODO('openSourceContributions'),
-    unit: '+',
-  },
+  { id: 'uptime', label: 'System Availability', value: '99.9%' },
+  { id: 'issues', label: 'Prod Issues Resolved', value: '50+' },
+  { id: 'mttr', label: 'MTTR Reduction', value: '−30%' },
+  { id: 'perf', label: 'Backend Perf Gain', value: '+20%' },
+  { id: 'deploy', label: 'Deploy Turnaround', value: '−15–20%' },
 ];
 
 export default stats;
