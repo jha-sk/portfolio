@@ -1,6 +1,6 @@
 import './globals.css';
 
-import { geistSans, geistMono } from '@/lib/fonts';
+import { ibmPlexSans, jetBrainsMono } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme-provider';
 import { ThemeToggle } from '@/components/layout/theme-toggle';
@@ -17,8 +17,8 @@ export default function RootLayout({ children }) {
     <html lang="en" suppressHydrationWarning>
       <body
         className={cn(
-          geistSans.variable,
-          geistMono.variable,
+          ibmPlexSans.variable,
+          jetBrainsMono.variable,
           'min-h-screen bg-background font-sans text-foreground antialiased'
         )}
       >

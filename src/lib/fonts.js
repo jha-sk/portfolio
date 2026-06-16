@@ -1,22 +1,24 @@
-import { Geist, Geist_Mono } from 'next/font/google';
+import { IBM_Plex_Sans, JetBrains_Mono } from 'next/font/google';
 
 /**
- * Geist Sans — display / heading / body (UI default).
- * CSS-variable bound to `--font-geist-sans`, self-hosted by next/font, swap.
+ * IBM Plex Sans — wordmarks, section headings, and body copy.
+ * CSS-variable bound to `--font-sans`, self-hosted by next/font, swap.
  */
-export const geistSans = Geist({
+export const ibmPlexSans = IBM_Plex_Sans({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-geist-sans',
+  variable: '--font-sans',
+  weight: ['400', '600', '700'],
 });
 
 /**
- * Geist Mono — OS / terminal accent ONLY (stat readouts, Mission Log IDs,
- * command-palette text). Never the body typeface.
- * CSS-variable bound to `--font-geist-mono`.
+ * JetBrains Mono — the "system voice": labels, kickers, skill chips,
+ * telemetry/metrics, coordinate tags, command prompts, and code-comment taglines.
+ * CSS-variable bound to `--font-mono`, self-hosted by next/font, swap.
  */
-export const geistMono = Geist_Mono({
+export const jetBrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-geist-mono',
+  variable: '--font-mono',
+  weight: ['400', '500', '700'],
 });

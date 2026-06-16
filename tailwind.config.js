@@ -25,64 +25,51 @@ module.exports = {
     extend: {
       // All values resolve to the CSS custom properties declared once in globals.css.
       colors: {
-        background: 'var(--background)',
-        surface: 'var(--surface)',
+        // Core dichromatic tokens
+        background: 'var(--bg)',
+        fg:         'var(--fg)',
+        fg2:        'var(--fg-2)',
+        fg3:        'var(--fg-3)',
+        line:       'var(--line)',
+        'line-strong': 'var(--line-strong)',
+
+        // shadcn-compatible aliases (so shadcn primitives work out of the box)
         foreground: 'var(--foreground)',
         primary: {
-          DEFAULT: 'var(--primary)',
+          DEFAULT:    'var(--primary)',
           foreground: 'var(--primary-foreground)',
         },
+        secondary: {
+          DEFAULT:    'var(--secondary)',
+          foreground: 'var(--secondary-foreground)',
+        },
         destructive: {
-          DEFAULT: 'var(--destructive)',
+          DEFAULT:    'var(--destructive)',
           foreground: 'var(--destructive-foreground)',
         },
         muted: {
-          DEFAULT: 'var(--muted)',
+          DEFAULT:    'var(--muted)',
           foreground: 'var(--muted-foreground)',
         },
-        disabled: {
-          foreground: 'var(--disabled-foreground)',
+        accent: {
+          DEFAULT:    'var(--accent)',
+          foreground: 'var(--accent-foreground)',
         },
-        border: 'var(--border)',
-        input: 'var(--input)',
-        ring: 'var(--ring)',
+        border:  'var(--border)',
+        input:   'var(--input)',
+        ring:    'var(--ring)',
         card: {
-          DEFAULT: 'var(--card)',
+          DEFAULT:    'var(--card)',
           foreground: 'var(--card-foreground)',
         },
         popover: {
-          DEFAULT: 'var(--popover)',
+          DEFAULT:    'var(--popover)',
           foreground: 'var(--popover-foreground)',
         },
-        secondary: {
-          DEFAULT: 'var(--secondary)',
-          foreground: 'var(--secondary-foreground)',
-        },
-        accent: {
-          DEFAULT: 'var(--accent)',
-          foreground: 'var(--accent-foreground)',
-        },
-        glass: {
-          DEFAULT: 'var(--glass-bg)',
-          border: 'var(--glass-border)',
-        },
-      },
-      backgroundColor: {
-        glass: 'var(--glass-bg)',
-      },
-      borderColor: {
-        glass: 'var(--glass-border)',
-      },
-      backgroundImage: {
-        'gradient-aurora': 'var(--gradient-aurora)',
-        'gradient-surface': 'var(--gradient-surface)',
       },
       boxShadow: {
-        glow: 'var(--glow-accent)',
-        soft: 'var(--glow-soft)',
-      },
-      backdropBlur: {
-        glass: 'var(--glass-blur)',
+        glow:  'var(--glow)',
+        panel: 'var(--panel-shadow)',
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -94,13 +81,13 @@ module.exports = {
         content: '1200px',
       },
       fontFamily: {
-        sans: ['var(--font-geist-sans)', 'system-ui', 'sans-serif'],
-        mono: ['var(--font-geist-mono)', 'ui-monospace', 'monospace'],
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        // Exactly 4 type sizes (UI-SPEC § Typography).
-        body: ['16px', { lineHeight: '1.5' }],
-        label: ['14px', { lineHeight: '1.4' }],
+        // 4 type sizes
+        body:    ['16px', { lineHeight: '1.5' }],
+        label:   ['14px', { lineHeight: '1.4' }],
         heading: ['20px', { lineHeight: '1.3' }],
         display: ['28px', { lineHeight: '1.2' }],
       },

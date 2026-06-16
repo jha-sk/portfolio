@@ -3,109 +3,64 @@
 @tailwind utilities;
 
 /*
- * Career OS — single design-token source (FND-02 / D-06 / D-12).
+ * Career OS — dichromatic design-token source (dark-only).
  *
- * All design tokens are declared ONCE here as CSS custom properties on :root
- * (dark, the default) and on .light, then surfaced to Tailwind via
- * tailwind.config.js theme.extend (var(--…)). Components consume tokens only —
+ * Palette: strictly two values — canvas #020202 and ice-blue #B2D5E5 in
+ * opacity tiers. No second hue, no white. Components consume tokens only;
  * hard-coded hex in components is a contract violation.
  *
  * shadcn's generated neutral variables are OVERRIDDEN here so every installed
- * shadcn component inherits the #020202 / #B2D5E5 "OS" look (D-12).
+ * shadcn component inherits the dichromatic "OS" look.
  */
 
 @layer base {
-  /* ---------- Dark theme (default) ---------- */
   :root {
-    /* Dichromatic palette */
-    --background: #020202; /* dominant 60% — the void */
-    --surface: #0b0d0f; /* raised surface + glass over the void */
-    --primary: #b2d5e5; /* accent 10% — ice-blue */
-    --primary-foreground: #020202; /* text on the accent */
-    --destructive: #e5746a; /* muted coral */
-    --destructive-foreground: #020202;
+    /* ── Core palette ──────────────────────────────────────────── */
+    --bg: #020202;
 
-    /* Text + border roles */
-    --foreground: #edf2f4; /* primary text (near-white) */
-    --muted-foreground: rgba(237, 242, 244, 0.64); /* secondary text */
-    --disabled-foreground: rgba(237, 242, 244, 0.38);
-    --border: rgba(178, 213, 229, 0.12); /* accent-tinted hairline */
-    --ring: #b2d5e5; /* 2px accent focus ring */
+    /* Ice-blue foreground tiers */
+    --fg:           #B2D5E5;
+    --fg-2:         rgba(178, 213, 229, 0.62);
+    --fg-3:         rgba(178, 213, 229, 0.42);
 
-    /* Glass / gradient / glow tokens */
-    --glass-bg: rgba(255, 255, 255, 0.05);
-    --glass-border: rgba(178, 213, 229, 0.12);
-    --glass-blur: 16px;
-    --glass-fallback: #0b0d0f; /* opaque layer when backdrop-filter unsupported */
-    --gradient-aurora: radial-gradient(
-      at 30% 20%,
-      rgba(178, 213, 229, 0.18),
-      transparent 60%
-    );
-    --gradient-surface: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.04),
-      rgba(255, 255, 255, 0)
-    );
-    --glow-accent: 0 0 24px rgba(178, 213, 229, 0.35);
-    --glow-soft: 0 8px 40px rgba(0, 0, 0, 0.45);
+    /* Hairline / grid */
+    --line:         rgba(178, 213, 229, 0.18);
+    --line-strong:  rgba(178, 213, 229, 0.3);
 
-    /* shadcn variable overrides (D-12) — map shadcn's neutral system onto our tokens */
-    --card: var(--surface);
-    --card-foreground: var(--foreground);
-    --popover: var(--surface);
-    --popover-foreground: var(--foreground);
-    --secondary: var(--surface);
-    --secondary-foreground: var(--foreground);
-    --muted: var(--surface);
-    --accent: var(--surface);
-    --accent-foreground: var(--foreground);
-    --input: var(--border);
-    --radius: 0.5rem;
-  }
+    /* Glow + shadow */
+    --glow:         0 0 28px rgba(178, 213, 229, 0.4);
+    --panel-shadow: 0 24px 70px rgba(0, 0, 0, 0.6);
 
-  /* ---------- Light theme (FND-03) ---------- */
-  .light {
-    --background: #f4f7f9;
-    --surface: #ffffff;
-    --primary: #3e7c93; /* darkened ice-blue for AA on light surfaces */
-    --primary-foreground: #ffffff;
-    --destructive: #c0463b;
-    --destructive-foreground: #ffffff;
+    /* ── shadcn neutral var overrides ─────────────────────────── */
+    /* Map shadcn's convention onto our tokens so primitives inherit the look. */
+    --background:           var(--bg);
+    --foreground:           var(--fg);
+    --border:               var(--line);
+    --ring:                 var(--fg);
 
-    --foreground: #0b0d0f;
-    --muted-foreground: rgba(11, 13, 15, 0.64);
-    --disabled-foreground: rgba(11, 13, 15, 0.38);
-    --border: rgba(2, 2, 2, 0.1);
-    --ring: #3e7c93;
+    --card:                 var(--bg);
+    --card-foreground:      var(--fg);
 
-    --glass-bg: rgba(255, 255, 255, 0.7);
-    --glass-border: rgba(2, 2, 2, 0.08);
-    --glass-blur: 16px;
-    --glass-fallback: #ffffff;
-    --gradient-aurora: radial-gradient(
-      at 30% 20%,
-      rgba(62, 124, 147, 0.12),
-      transparent 60%
-    );
-    --gradient-surface: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.9),
-      rgba(255, 255, 255, 0.6)
-    );
-    --glow-accent: 0 0 24px rgba(62, 124, 147, 0.25);
-    --glow-soft: 0 8px 40px rgba(2, 2, 2, 0.1);
+    --popover:              var(--bg);
+    --popover-foreground:   var(--fg);
 
-    --card: var(--surface);
-    --card-foreground: var(--foreground);
-    --popover: var(--surface);
-    --popover-foreground: var(--foreground);
-    --secondary: var(--surface);
-    --secondary-foreground: var(--foreground);
-    --muted: var(--surface);
-    --accent: var(--surface);
-    --accent-foreground: var(--foreground);
-    --input: var(--border);
+    --primary:              var(--fg);
+    --primary-foreground:   var(--bg);
+
+    --secondary:            rgba(178, 213, 229, 0.06);
+    --secondary-foreground: var(--fg);
+
+    --muted:                rgba(178, 213, 229, 0.06);
+    --muted-foreground:     var(--fg-2);
+
+    --accent:               rgba(178, 213, 229, 0.08);
+    --accent-foreground:    var(--fg);
+
+    --destructive:          rgba(178, 213, 229, 0.5);
+    --destructive-foreground: var(--bg);
+
+    --input:                var(--line);
+    --radius:               0.5rem;
   }
 
   * {
@@ -113,29 +68,32 @@
   }
 
   body {
-    background-color: var(--background);
-    color: var(--foreground);
+    background-color: var(--bg);
+    color: var(--fg);
     font-feature-settings: 'rlig' 1, 'calt' 1;
   }
 }
 
 @layer utilities {
-  /*
-   * Opaque fallback for the glass layer: when backdrop-filter is unsupported,
-   * fall back to an opaque surface so glass panels stay legible (Lighthouse /
-   * unsupported-backdrop case, per the UI-SPEC glass-blur note).
-   */
-  .glass-surface {
-    background-color: var(--glass-fallback);
+  /* Repeating 1 px scanline over the void */
+  .scanlines {
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(178, 213, 229, 0.035) 0 1px,
+      transparent 1px 3px
+    );
   }
 
-  @supports (
-    (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
-  ) {
-    .glass-surface {
-      background-color: var(--glass-bg);
-      -webkit-backdrop-filter: blur(var(--glass-blur));
-      backdrop-filter: blur(var(--glass-blur));
-    }
+  /* Blueprint grid plane */
+  .grid-plane {
+    background-image:
+      linear-gradient(rgba(178, 213, 229, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(178, 213, 229, 0.08) 1px, transparent 1px);
+    background-size: 34px 34px;
+  }
+
+  /* Ice-blue text glow */
+  .text-glow {
+    text-shadow: var(--glow);
   }
 }
