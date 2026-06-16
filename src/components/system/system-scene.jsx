@@ -3,34 +3,51 @@
 /**
  * SystemScene — React Three Fiber port of the approved vanilla-Three.js prototype.
  *
- * Scene elements (all dichromatic #020202 / #B2D5E5):
+ * Scene elements (dark void #020202 with vivid data-center objects):
  *   • Server-room GridHelper floor
- *   • 4 corner wireframe racks
- *   • Central glowing core (icosahedron — the identity)
- *   • Orbiting service nodes (octahedrons) with tracked HTML labels
- *   • Postgres database cylinder
- *   • Glowing edges with traveling packet spheres
+ *   • 4 corner solid metallic racks with multi-colour status LEDs
+ *   • Central glowing core (icosahedron — the identity) — bright ice-blue emissive
+ *   • Orbiting service nodes (octahedrons) — solid cyan, lit, emissive
+ *   • Postgres database cylinder — solid teal, lit, bright rings
+ *   • drei <Line> edges + traveling bright packet spheres
  *   • Ambient particle cloud
  *   • Radar scan ring
- *   • Bloom (UnrealBloom via @react-three/postprocessing)
+ *   • Bloom (EffectComposer / @react-three/postprocessing) — tuned threshold 0.2
+ *   • Ambient + point lights for proper meshStandardMaterial shading
  *   • OrbitControls (auto-rotate + damping + zoom clamps)
  *   • Intro camera fly-in (~2.5 s lerp)
  *   • Hover-to-inspect node highlight
  *
- * Token contract: raw ICE hex only for Three.js color values (Three doesn't parse CSS vars).
+ * Token contract: raw hex only for Three.js color values (Three doesn't parse CSS vars).
  * DOM overlay (node labels via drei <Html>) uses CSS vars where possible.
  */
 
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html } from '@react-three/drei';
+import { OrbitControls, Html, Line } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 
-/* ── Palette constants (Three.js hex — cannot use CSS vars here) ─────────── */
-const ICE = '#B2D5E5';
-const ICE_HEX = 0xb2d5e5;
-const VOID = '#020202';
+/* ── Palette constants ────────────────────────────────────────────────────── */
+const ICE      = '#B2D5E5';
+const ICE_HEX  = 0xb2d5e5;
+const VOID     = '#020202';
+
+// Vivid data-center colours
+const CYAN_BRIGHT  = '#bfe6f5';   // core primary
+const CYAN_EMIS    = '#7fd4ee';   // core emissive
+const NODE_COLOR   = '#5fd0e6';   // service node solid
+const NODE_EMIS    = '#2aa7c8';   // service node emissive
+const DB_COLOR     = '#1aa7c0';   // database cylinder
+const DB_EMIS      = '#0e6e80';   // database emissive
+const DB_RING      = '#3dd6e8';   // database ring accent
+const PACKET_COLOR = '#dffaff';   // traveling packets
+const EDGE_ICE     = '#9fd8ea';   // edge line colour
+
+// Server rack LED colours (status lights: green, amber, ice)
+const LED_GREEN = '#46d17f';
+const LED_AMBER = '#e8b34a';
+const LED_ICE   = '#9fdcea';
 
 /* ── Service-node configuration ─────────────────────────────────────────── */
 const NODES_CONFIG = [
@@ -53,13 +70,8 @@ const RACK_CONFIGS = [
 /* ── Rack positions as Vector3 for edge connections ─────────────────────── */
 const RACK_POSITIONS = RACK_CONFIGS.map(r => new THREE.Vector3(...r.position).setY(2.2));
 
-/* ── Shared material factories ───────────────────────────────────────────── */
-function makeWireMat(opacity = 0.5) {
-  return new THREE.MeshBasicMaterial({ color: ICE_HEX, wireframe: true, transparent: true, opacity });
-}
-function makeBrightMat() {
-  return new THREE.MeshBasicMaterial({ color: ICE_HEX });
-}
+/* ── LED colour palette per unit (cycles) ───────────────────────────────── */
+const LED_PALETTE = [LED_GREEN, LED_GREEN, LED_AMBER, LED_ICE, LED_GREEN, LED_AMBER];
 
 /* ── Particles ───────────────────────────────────────────────────────────── */
 function Particles() {
@@ -89,7 +101,7 @@ function Particles() {
           itemSize={3}
         />
       </bufferGeometry>
-      <pointsMaterial color={ICE_HEX} size={0.06} transparent opacity={0.5} />
+      <pointsMaterial color={ICE_HEX} size={0.07} transparent opacity={0.55} />
     </points>
   );
 }
@@ -102,14 +114,14 @@ function RadarRing() {
     const rs = (t % 3) / 3;
     if (ref.current) {
       ref.current.scale.setScalar(1 + rs * 6);
-      ref.current.material.opacity = 0.5 * (1 - rs);
+      ref.current.material.opacity = 0.55 * (1 - rs);
     }
   });
 
   return (
     <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
       <ringGeometry args={[1.2, 1.32, 64]} />
-      <meshBasicMaterial color={ICE_HEX} transparent opacity={0.5} side={THREE.DoubleSide} />
+      <meshBasicMaterial color={ICE_HEX} transparent opacity={0.55} side={THREE.DoubleSide} />
     </mesh>
   );
 }
@@ -118,11 +130,15 @@ function RadarRing() {
 function Core() {
   const coreRef = useRef();
   const glowRef = useRef();
+  const shellRef = useRef();
 
   useFrame((state, dt) => {
     if (coreRef.current) {
       coreRef.current.rotation.y += dt * 0.3;
       coreRef.current.rotation.x += dt * 0.1;
+    }
+    if (shellRef.current) {
+      shellRef.current.rotation.y -= dt * 0.15;
     }
     if (glowRef.current) {
       const t = state.clock.elapsedTime;
@@ -132,18 +148,29 @@ function Core() {
 
   return (
     <group position={[0, 1.8, 0]}>
-      {/* wireframe shell */}
+      {/* solid emissive core — bright focal point */}
       <mesh ref={coreRef}>
         <icosahedronGeometry args={[1.3, 1]} />
-        <meshBasicMaterial color={ICE_HEX} wireframe transparent opacity={0.5} />
+        <meshStandardMaterial
+          color={CYAN_BRIGHT}
+          emissive={CYAN_EMIS}
+          emissiveIntensity={1.4}
+          roughness={0.35}
+          metalness={0.2}
+        />
       </mesh>
-      {/* bloom-friendly subtle glow volume */}
+      {/* outer wireframe shell */}
+      <mesh ref={shellRef}>
+        <icosahedronGeometry args={[1.7, 1]} />
+        <meshBasicMaterial color={ICE_HEX} wireframe transparent opacity={0.22} />
+      </mesh>
+      {/* bloom glow volume */}
       <mesh ref={glowRef}>
-        <icosahedronGeometry args={[1.8, 1]} />
-        <meshBasicMaterial color={ICE_HEX} transparent opacity={0.06} />
+        <icosahedronGeometry args={[2.1, 1]} />
+        <meshBasicMaterial color={CYAN_EMIS} transparent opacity={0.05} />
       </mesh>
       {/* tracked label */}
-      <Html position={[0, 1.4, 0]} center distanceFactor={18} zIndexRange={[10, 0]}>
+      <Html position={[0, 1.6, 0]} center distanceFactor={18} zIndexRange={[10, 0]}>
         <span className="node-label">core</span>
       </Html>
     </group>
@@ -182,7 +209,13 @@ function ServiceNode({ config, index }) {
         onPointerOut={handleOut}
       >
         <octahedronGeometry args={[0.5]} />
-        <meshBasicMaterial color={ICE_HEX} wireframe transparent opacity={hovered ? 0.8 : 0.5} />
+        <meshStandardMaterial
+          color={NODE_COLOR}
+          emissive={NODE_EMIS}
+          emissiveIntensity={hovered ? 1.4 : 0.8}
+          roughness={0.3}
+          metalness={0.15}
+        />
       </mesh>
       <Html position={[0, 0.9, 0]} center distanceFactor={18} zIndexRange={[10, 0]}>
         <span className={`node-label${hovered ? ' node-label--hot' : ' node-label--dim'}`}>
@@ -200,18 +233,42 @@ function Rack({ config }) {
 
   return (
     <group position={config.position} rotation={[0, rotY, 0]}>
-      {/* wireframe cabinet */}
+      {/* solid metallic cabinet body */}
+      <mesh position={[0, 1.8, 0]}>
+        <boxGeometry args={[2.4, 3.6, 1.4]} />
+        <meshStandardMaterial
+          color="#0d1b22"
+          metalness={0.6}
+          roughness={0.4}
+        />
+      </mesh>
+      {/* subtle ice-blue edge outline */}
       <lineSegments position={[0, 1.8, 0]}>
         <edgesGeometry args={[new THREE.BoxGeometry(2.4, 3.6, 1.4)]} />
-        <lineBasicMaterial color={ICE_HEX} transparent opacity={0.5} />
+        <lineBasicMaterial color={EDGE_ICE} transparent opacity={0.45} />
       </lineSegments>
-      {/* unit panels */}
-      {Array.from({ length: 6 }, (_, i) => (
-        <mesh key={i} position={[0, 0.55 + i * 0.5, 0.72]}>
-          <planeGeometry args={[1.8, 0.18]} />
-          <meshBasicMaterial color={ICE_HEX} />
-        </mesh>
-      ))}
+      {/* status LED unit strips */}
+      {Array.from({ length: 6 }, (_, i) => {
+        const ledColor = LED_PALETTE[i % LED_PALETTE.length];
+        return (
+          <group key={i} position={[0, 0.55 + i * 0.5, 0.71]}>
+            {/* dark panel */}
+            <mesh>
+              <planeGeometry args={[1.8, 0.18]} />
+              <meshStandardMaterial color="#091318" metalness={0.5} roughness={0.5} />
+            </mesh>
+            {/* glowing LED indicator */}
+            <mesh position={[0.72, 0, 0.001]}>
+              <planeGeometry args={[0.09, 0.09]} />
+              <meshBasicMaterial color={ledColor} />
+            </mesh>
+            <mesh position={[0.72, 0, 0.001]}>
+              <planeGeometry args={[0.16, 0.16]} />
+              <meshBasicMaterial color={ledColor} transparent opacity={0.18} />
+            </mesh>
+          </group>
+        );
+      })}
       {/* label above rack */}
       <Html position={[0, 3.9, 0]} center distanceFactor={22} zIndexRange={[5, 0]}>
         <span className="node-label node-label--dim">{config.name}</span>
@@ -230,16 +287,22 @@ function Database() {
 
   return (
     <group position={[0, 0, -7.5]}>
-      {/* open cylinder (open-ended for wireframe look) */}
+      {/* solid cylinder body */}
       <mesh ref={bodyRef} position={[0, 1.3, 0]}>
-        <cylinderGeometry args={[1.1, 1.1, 1.8, 28, 1, true]} />
-        <meshBasicMaterial color={ICE_HEX} wireframe transparent opacity={0.5} />
+        <cylinderGeometry args={[1.1, 1.1, 1.8, 28, 1, false]} />
+        <meshStandardMaterial
+          color={DB_COLOR}
+          emissive={DB_EMIS}
+          emissiveIntensity={0.9}
+          roughness={0.4}
+          metalness={0.3}
+        />
       </mesh>
-      {/* disk rings */}
-      {[0.55, 1.3, 2.05].map((y) => (
+      {/* bright ring bands */}
+      {[0.45, 1.3, 2.15].map((y) => (
         <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[1.1, 0.03, 8, 28]} />
-          <meshBasicMaterial color={ICE_HEX} />
+          <torusGeometry args={[1.12, 0.05, 8, 36]} />
+          <meshBasicMaterial color={DB_RING} />
         </mesh>
       ))}
       {/* label */}
@@ -250,26 +313,34 @@ function Database() {
   );
 }
 
-/* ── Edge + Packet ───────────────────────────────────────────────────────── */
+/* ── Edge (drei <Line>) + Packet ─────────────────────────────────────────── */
 function Edge({ start, end, bright = false }) {
-  const points = useMemo(() => [
-    new THREE.Vector3(...(Array.isArray(start) ? start : [start.x, start.y, start.z])),
-    new THREE.Vector3(...(Array.isArray(end) ? end : [end.x, end.y, end.z])),
-  ], [start, end]);
+  const startArr = Array.isArray(start) ? start : [start.x, start.y, start.z];
+  const endArr   = Array.isArray(end)   ? end   : [end.x,   end.y,   end.z];
+  const points   = [startArr, endArr];
 
   return (
-    <line>
-      <bufferGeometry setFromPoints={points} />
-      <lineBasicMaterial color={ICE_HEX} transparent opacity={bright ? 0.5 : 0.28} />
-    </line>
+    <Line
+      points={points}
+      color={EDGE_ICE}
+      lineWidth={1}
+      transparent
+      opacity={bright ? 0.6 : 0.35}
+    />
   );
 }
 
 function Packet({ start, end, speed, bright = false }) {
-  const ref = useRef();
+  const ref  = useRef();
   const tRef = useRef(Math.random());
-  const a = useMemo(() => new THREE.Vector3(...(Array.isArray(start) ? start : [start.x, start.y, start.z])), [start]);
-  const b = useMemo(() => new THREE.Vector3(...(Array.isArray(end) ? end : [end.x, end.y, end.z])), [end]);
+  const a = useMemo(
+    () => new THREE.Vector3(...(Array.isArray(start) ? start : [start.x, start.y, start.z])),
+    [start]
+  );
+  const b = useMemo(
+    () => new THREE.Vector3(...(Array.isArray(end) ? end : [end.x, end.y, end.z])),
+    [end]
+  );
 
   useFrame((_, dt) => {
     tRef.current += dt * speed;
@@ -279,8 +350,8 @@ function Packet({ start, end, speed, bright = false }) {
 
   return (
     <mesh ref={ref}>
-      <sphereGeometry args={[bright ? 0.13 : 0.09, 8, 8]} />
-      <meshBasicMaterial color={ICE_HEX} />
+      <sphereGeometry args={[bright ? 0.15 : 0.1, 8, 8]} />
+      <meshBasicMaterial color={PACKET_COLOR} />
     </mesh>
   );
 }
@@ -289,7 +360,6 @@ function Packet({ start, end, speed, bright = false }) {
 const CORE_POS = [0, 1.8, 0];
 const DB_POS   = [0, 1.3, -7.5];
 
-// Node positions by index for edge wiring
 const NP = NODES_CONFIG.map(n => n.position);
 
 const EDGE_DEFS = [
@@ -352,17 +422,41 @@ function CameraRig() {
   return null;
 }
 
+/* ── Grid floor with visible opacity ─────────────────────────────────────── */
+function GridFloor() {
+  const ref = useRef();
+
+  return (
+    <gridHelper
+      ref={ref}
+      args={[56, 56, ICE_HEX, ICE_HEX]}
+      position={[0, 0, 0]}
+      onUpdate={(self) => {
+        // Both materials in GridHelper: set transparent + opacity
+        if (self.material) {
+          const mats = Array.isArray(self.material) ? self.material : [self.material];
+          mats.forEach(m => {
+            m.transparent = true;
+            m.opacity = 0.28;
+          });
+        }
+      }}
+    />
+  );
+}
+
 /* ── Full scene graph ────────────────────────────────────────────────────── */
 function SceneGraph() {
   return (
     <>
       <fog attach="fog" args={[VOID, 60, 240]} />
 
-      {/* floor grid */}
-      <gridHelper args={[56, 56, ICE_HEX, ICE_HEX]} position={[0, 0, 0]}>
-        {/* override opacity via direct material access */}
-      </gridHelper>
+      {/* lights — essential for meshStandardMaterial surfaces */}
+      <ambientLight intensity={0.6} />
+      <pointLight position={[0, 12, 8]}  intensity={120} distance={80} color="#bfe3f2" />
+      <pointLight position={[8, 6, -10]} intensity={60}  distance={60} color="#a0cfe4" />
 
+      <GridFloor />
       <Particles />
       <RadarRing />
       <Core />
@@ -393,7 +487,13 @@ function SceneGraph() {
       />
 
       <EffectComposer>
-        <Bloom luminanceThreshold={0} luminanceSmoothing={0.82} intensity={0.95} radius={0.6} />
+        <Bloom
+          luminanceThreshold={0.2}
+          luminanceSmoothing={0.82}
+          mipmapBlur
+          intensity={0.8}
+          radius={0.6}
+        />
       </EffectComposer>
     </>
   );
@@ -426,7 +526,7 @@ export default function SystemScene() {
 
       <Canvas
         camera={{ position: [0, 16, 26], fov: 52, near: 0.1, far: 240 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, toneMapping: THREE.NoToneMapping }}
         dpr={[1, 2]}
         style={{ background: VOID, cursor: 'grab' }}
         onCreated={({ gl }) => {

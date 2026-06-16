@@ -78,6 +78,12 @@ None yet.
 
 - Windows/Node 26 box gotchas (from PROJECT.md): truncated `next-swc` → clean npm cache + reinstall; avoid `@vercel/og` dynamic OG/icon routes (use static assets); kill port owner + remove `.next` before re-testing builds.
 
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260616-001 | Fix system-scene.jsx: solid lit materials, real colours, drei Line edges, tuned bloom | 2026-06-16 | — | [260616-001-fix-3d-system-scene-visibility](.planning/quick/260616-001-fix-3d-system-scene-visibility/) |
+
 ## Deferred Items
 
 Items acknowledged and carried forward from previous milestone close:
