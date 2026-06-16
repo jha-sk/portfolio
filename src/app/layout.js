@@ -2,7 +2,6 @@ import './globals.css';
 
 import { ibmPlexSans, jetBrainsMono } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
-import { BootOverlay } from '@/components/boot/boot-overlay';
 import { Dock } from '@/components/nav/dock';
 
 export const metadata = {
@@ -25,7 +24,6 @@ export default function RootLayout({ children }) {
           'min-h-screen bg-background font-sans text-foreground antialiased'
         )}
       >
-        <BootOverlay />
         <Dock />
         <main>{children}</main>
       </body>
