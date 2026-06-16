@@ -25,8 +25,9 @@
 
 import { useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Html, Line } from '@react-three/drei';
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { OrbitControls, Html, Line, MeshReflectorMaterial } from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette, Noise, ChromaticAberration } from '@react-three/postprocessing';
+import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 
 /* ── Palette constants ────────────────────────────────────────────────────── */
@@ -565,6 +566,26 @@ function CameraFlyTo({ active, controlsRef }) {
   return null;
 }
 
+/* ── Reflective floor plane ──────────────────────────────────────────────── */
+function ReflectiveFloor() {
+  return (
+    <mesh rotation-x={-Math.PI / 2} position={[0, -0.01, 0]} receiveShadow>
+      <planeGeometry args={[120, 120]} />
+      <MeshReflectorMaterial
+        resolution={1024}
+        blur={[400, 120]}
+        mixBlur={1}
+        mixStrength={1.2}
+        depthScale={1.1}
+        minDepthThreshold={0.4}
+        color="#040608"
+        metalness={0.6}
+        roughness={0.9}
+      />
+    </mesh>
+  );
+}
+
 /* ── Grid floor with visible opacity ─────────────────────────────────────── */
 function GridFloor() {
   const ref = useRef();
@@ -573,14 +594,14 @@ function GridFloor() {
     <gridHelper
       ref={ref}
       args={[56, 56, ICE_HEX, ICE_HEX]}
-      position={[0, 0, 0]}
+      position={[0, 0.02, 0]}
       onUpdate={(self) => {
         // Both materials in GridHelper: set transparent + opacity
         if (self.material) {
           const mats = Array.isArray(self.material) ? self.material : [self.material];
           mats.forEach(m => {
             m.transparent = true;
-            m.opacity = 0.28;
+            m.opacity = 0.18;
           });
         }
       }}
@@ -601,6 +622,7 @@ function SceneGraph({ onSelect, active }) {
       <pointLight position={[0, 12, 8]}  intensity={120} distance={80} color="#bfe3f2" />
       <pointLight position={[8, 6, -10]} intensity={60}  distance={60} color="#a0cfe4" />
 
+      <ReflectiveFloor />
       <GridFloor />
       <Particles />
       <RadarRing />
@@ -641,6 +663,9 @@ function SceneGraph({ onSelect, active }) {
           intensity={0.42}
           radius={0.55}
         />
+        <Vignette offset={0.3} darkness={0.65} />
+        <Noise opacity={0.025} premultiply blendFunction={BlendFunction.SOFT_LIGHT} />
+        <ChromaticAberration offset={[0.0006, 0.0006]} />
       </EffectComposer>
     </>
   );
