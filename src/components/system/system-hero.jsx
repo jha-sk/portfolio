@@ -17,14 +17,14 @@
  * Dichromatic contract: CSS vars only in DOM layer; ICE hex only in Three.js layer (in system-scene).
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { useReducedMotion } from 'framer-motion';
+import { useReducedMotion, motion, AnimatePresence } from 'framer-motion';
 import { identity } from '@/data/identity';
-import { stats } from '@/data/stats';
 import { links } from '@/data/links';
 import { SystemFallback } from './system-fallback';
 import { SectionPanel } from './section-panel';
+import { LiveTelemetry } from './live-telemetry';
 
 /* Lazy-load the Canvas — never SSR'd (WebGL requires browser) */
 const SystemScene = dynamic(() => import('./system-scene'), {
@@ -64,25 +64,7 @@ function HudTopLeft() {
   );
 }
 
-function HudTopRight() {
-  return (
-    <div
-      className="absolute right-5 top-5 z-10 flex flex-wrap justify-end gap-2"
-      style={{ maxWidth: '62vw', pointerEvents: 'none' }}
-      aria-label="System telemetry"
-    >
-      {stats.map((s) => (
-        <span
-          key={s.id}
-          className="rounded-full border px-3 py-1 font-mono text-[10px]"
-          style={{ borderColor: 'rgba(178,213,229,0.2)', color: 'rgba(178,213,229,0.6)' }}
-        >
-          {s.id} <b style={{ color: 'var(--fg)' }}>{s.value}</b>
-        </span>
-      ))}
-    </div>
-  );
-}
+/* HudTopRight is now replaced by LiveTelemetry (see bottom of file). */
 
 function HudCenter() {
   return (
@@ -248,6 +230,111 @@ function HudNav({ active, onSelect }) {
   );
 }
 
+/* ── Boot sequence log lines ─────────────────────────────────────────────── */
+const BOOT_LINES = [
+  '> initializing core…',
+  '> linking services [6/6]',
+  '> mounting database',
+  '> system online',
+];
+
+// Total duration budget: ~2 s. Each line gets ~400 ms; overlay fades after last line.
+const LINE_DELAY_MS  = 380;  // gap between each revealed line
+const FADE_DELAY_MS  = 200;  // pause after last line before fade starts
+const FADE_DURATION  = 0.35; // seconds for overlay exit fade
+
+/**
+ * BootSequence — a brief "connect" log overlay shown once on first mount.
+ * Only rendered when motion is allowed (client-side check handled by caller).
+ * pointer-events-none; unmounted after fade so it never blocks interaction.
+ */
+function BootSequence() {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const [done, setDone] = useState(false);
+
+  // Skip via any pointer/key event
+  const skip = useCallback(() => setDone(true), []);
+
+  useEffect(() => {
+    const timers = [];
+
+    BOOT_LINES.forEach((_, i) => {
+      timers.push(setTimeout(() => {
+        setVisibleCount(i + 1);
+        if (i === BOOT_LINES.length - 1) {
+          // Pause then mark done (triggers AnimatePresence exit)
+          timers.push(setTimeout(() => setDone(true), FADE_DELAY_MS));
+        }
+      }, (i + 1) * LINE_DELAY_MS));
+    });
+
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('pointerdown', skip, { once: true });
+    window.addEventListener('keydown', skip, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', skip);
+      window.removeEventListener('keydown', skip);
+    };
+  }, [skip]);
+
+  return (
+    <AnimatePresence>
+      {!done && (
+        <motion.div
+          key="boot"
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: FADE_DURATION, ease: 'easeOut' }}
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            zIndex: 30,
+            pointerEvents: 'none',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'flex-start',
+            padding: '0 8vw',
+          }}
+        >
+          <div
+            style={{
+              fontFamily: 'var(--font-jetbrains-mono, monospace)',
+              fontSize: 'clamp(11px, 1.4vw, 14px)',
+              lineHeight: 1.9,
+              letterSpacing: '0.06em',
+            }}
+          >
+            {BOOT_LINES.slice(0, visibleCount).map((line, i) => {
+              const isLast = i === BOOT_LINES.length - 1;
+              return (
+                <motion.div
+                  key={line}
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                  style={{
+                    color: isLast ? '#eaf6fb' : 'rgba(178,213,229,0.65)',
+                    textShadow: isLast
+                      ? '0 0 18px rgba(178,213,229,0.7)'
+                      : 'none',
+                  }}
+                >
+                  {line}
+                </motion.div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /* ── Client canvas guard ──────────────────────────────────────────────────── */
 
 function CanvasOrFallback({ active, onSelect }) {
@@ -268,6 +355,7 @@ function CanvasOrFallback({ active, onSelect }) {
 
 export function SystemHero() {
   const [active, setActive] = useState(null);
+  const prefersReducedMotion = useReducedMotion();
 
   return (
     <section
@@ -279,9 +367,13 @@ export function SystemHero() {
       {/* Canvas (lazy, client-only, replaced by fallback during load/reduced-motion) */}
       <CanvasOrFallback active={active} onSelect={setActive} />
 
+      {/* Boot sequence overlay — motion-allowed path only, unmounts after ~2 s */}
+      {!prefersReducedMotion && <BootSequence />}
+
       {/* HUD overlay — pointer-events-none DOM layer (SSR'd for SEO) */}
       <HudTopLeft />
-      <HudTopRight />
+      {/* Live animated telemetry replaces static HudTopRight */}
+      <LiveTelemetry />
       <HudCenter />
       <HudNav active={active} onSelect={setActive} />
       <HudHint />
