@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
  * Motion: a subtle ~1.8s vertical bob (transform/opacity only). Reduced motion
  * (D-05): the bob is disabled and the cue renders statically.
  */
-export function ScrollCue({ targetId = 'below-hero', className }) {
+export function ScrollCue({ targetId = 'snapshot', className }) {
   const prefersReducedMotion = useReducedMotion();
 
   function handleScroll() {
