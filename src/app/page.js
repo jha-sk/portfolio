@@ -1,12 +1,23 @@
 import { Hero } from '@/components/hero/hero';
+import { Snapshot } from '@/components/sections/snapshot';
+import { About } from '@/components/sections/about';
 
 /*
- * Home route — leads with the Career OS Hero.
+ * Home route — Career OS single-page layout.
  *
- * The boot overlay (mounted in layout.js) wipes away to reveal the full-viewport
- * Hero. The #snapshot section lands in the next task (Phase 2, plan 02). The
- * scroll-cue's window.scrollBy fallback handles the missing target gracefully.
+ * Section order mirrors the IA (spec §4):
+ *   1. Hero       — full-viewport terminal wordmark
+ *   2. Snapshot   — telemetry stat strip
+ *   3. About      — ~/about console panel
+ *
+ * The boot overlay (mounted in layout.js) wipes away to reveal Hero first.
  */
 export default function HomePage() {
-  return <Hero />;
+  return (
+    <>
+      <Hero />
+      <Snapshot />
+      <About />
+    </>
+  );
 }
