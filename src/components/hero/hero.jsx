@@ -1,135 +1,272 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { identity } from '@/data/identity';
 import { stats } from '@/data/stats';
 import { skills } from '@/data/skills';
 import { ConsolePanel } from '@/components/ui/console-panel';
 import { Node } from '@/components/blueprint/node';
-import { Axis } from '@/components/blueprint/axis';
 import { Coordinate } from '@/components/blueprint/coordinate';
 import { Chip } from '@/components/blueprint/chip';
-import { MountReveal, MountRevealItem } from '@/components/motion/mount-reveal';
 import { ScrollCue } from './scroll-cue';
 
 /**
- * Hero — full-viewport terminal frame + 3D blueprint wordmark (HERO-01 / HERO-02).
+ * Hero — self-query terminal treatment.
  *
- * Composition: A ConsolePanel (terminal window chrome) centered in a min-h-[100svh]
- * section. Inside: staggered MountReveal entrance with Node kicker, the 3D-extruded
- * SOURABH JHA wordmark, a drawn Axis, role line, skill chips, and telemetry.
+ * Behavior: on mount, a GET request line types out character-by-character, then
+ * the response resolves: status badge + staggered identity result block.
  *
- * Server component — all client animation is in MountReveal/MountRevealItem +
- * child primitives. Content is data-driven (identity, stats, skills) — never hardcoded.
- * Token-only styling throughout (dichromatic: #020202 + #B2D5E5 tiers only).
+ * SSR: all result content is present in the initial DOM (opacity:0 initial state
+ * is set in Framer animate props, not conditional mount), so the server renders
+ * the full identity for SEO/prerendering.
+ *
+ * Reduced motion: the fully-resolved state is rendered immediately — no typewriter,
+ * no stagger, everything visible and static.
+ *
+ * Token contract: dichromatic #020202 / #B2D5E5 via CSS vars only.
+ * Raw rgba allowed ONLY for the wordmark 3D shadow and the ambient glow blob.
  */
 
-/* ── Skill chips: pick 6 representative skills from the data ───────────── */
-const HERO_SKILL_IDS = ['Go', 'Kubernetes', 'Terraform', 'AWS', 'Linux', 'Observability'];
+/* ── Constants ─────────────────────────────────────────────────────────── */
+
+const QUERY_STRING = 'GET /api/engineer?id=sourabh-jha --resolve';
+const MS_PER_CHAR = 28;
+
+const HERO_SKILL_IDS = ['Go', 'Kubernetes', 'Terraform', 'AWS', 'Linux', 'Prometheus'];
+
+/* ── Helpers ────────────────────────────────────────────────────────────── */
 
 function pickHeroSkills(skillData) {
   const all = skillData.flatMap((cat) => cat.items);
-  const selected = HERO_SKILL_IDS.map((id) => {
-    // Observability is a category label, not an item — fall back to "Prometheus"
-    if (id === 'Observability') {
-      const found = all.find((s) => s === 'Prometheus' || s === 'Grafana');
-      return found ?? 'Observability';
-    }
-    return all.find((s) => s === id) ?? id;
-  });
-  return selected;
+  return HERO_SKILL_IDS.map((id) => all.find((s) => s === id) ?? id);
 }
-
-/* ── Telemetry line from first 4 stats ─────────────────────────────────── */
-const STAT_LABELS = {
-  uptime: 'uptime',
-  issues: 'issues',
-  mttr: 'mttr',
-  perf: 'perf',
-};
 
 function buildTelemetry(statData) {
   return statData
     .slice(0, 4)
-    .map((s) => `${STAT_LABELS[s.id] ?? s.id} ${s.value}`)
+    .map((s) => `${s.id} ${s.value}`)
     .join(' · ');
 }
 
+/* ── useTypewriter hook ─────────────────────────────────────────────────── */
+
+/**
+ * Reveals `text` one character at a time with `msPerChar` delay.
+ * Returns { displayed: string, done: boolean }.
+ * When `enabled` is false — returns the full text immediately (reduced-motion path).
+ */
+function useTypewriter(text, msPerChar, enabled) {
+  const [displayed, setDisplayed] = useState(enabled ? '' : text);
+  const [done, setDone] = useState(!enabled);
+
+  useEffect(() => {
+    if (!enabled) {
+      setDisplayed(text);
+      setDone(true);
+      return;
+    }
+    setDisplayed('');
+    setDone(false);
+    let i = 0;
+    const id = setInterval(() => {
+      i += 1;
+      setDisplayed(text.slice(0, i));
+      if (i >= text.length) {
+        clearInterval(id);
+        setDone(true);
+      }
+    }, msPerChar);
+    return () => clearInterval(id);
+  }, [text, msPerChar, enabled]);
+
+  return { displayed, done };
+}
+
+/* ── Framer variants ────────────────────────────────────────────────────── */
+
+const FADE_UP = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const STAGGER_CONTAINER = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.09, delayChildren: 0.04 } },
+};
+
+/* ── Component ──────────────────────────────────────────────────────────── */
+
 export function Hero() {
+  const prefersReducedMotion = useReducedMotion();
+  // When reduced-motion, animate === false means fully resolved immediately.
+  const animate = !prefersReducedMotion;
+
   const heroSkills = pickHeroSkills(skills);
   const telemetry = buildTelemetry(stats);
 
+  /* Typewriter */
+  const { displayed, done: typingDone } = useTypewriter(QUERY_STRING, MS_PER_CHAR, animate);
+
+  /* Phase: 'typing' → 'resolved' */
+  const [phase, setPhase] = useState(animate ? 'typing' : 'resolved');
+
+  useEffect(() => {
+    if (typingDone && phase === 'typing') {
+      // Small pause before response appears
+      const t = setTimeout(() => setPhase('resolved'), 180);
+      return () => clearTimeout(t);
+    }
+  }, [typingDone, phase]);
+
+  /* Breathing glow animation ref — runs only when not reduced-motion */
+  const breathingVariants = animate
+    ? {
+        rest: { textShadow: WORDMARK_SHADOW },
+        breathe: {
+          textShadow: WORDMARK_SHADOW_GLOW,
+          transition: { duration: 3.5, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' },
+        },
+      }
+    : null;
+
+  const resolved = phase === 'resolved';
+
   return (
     <section className="relative flex min-h-[100svh] items-center justify-center overflow-hidden px-4 py-16 md:px-8">
-      {/* Ambient glow blob behind the window */}
+      {/* Ambient glow blob — alpha-only, authorized raw value */}
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[60vh] w-[60vw] max-w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-fg"
-        style={{ opacity: 0.04, filter: 'blur(120px)' }}
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full"
+        style={{
+          width: 'min(60vw, 600px)',
+          height: 'min(60vh, 480px)',
+          background: 'rgba(178,213,229,0.04)',
+          filter: 'blur(120px)',
+        }}
       />
 
-      {/* Terminal window — the hero frame */}
+      {/* Terminal window */}
       <ConsolePanel
-        title="~/career-os — zsh"
+        title="~/career-os — query"
         dots
-        className="relative w-full max-w-[780px]"
+        className="relative w-full max-w-[820px]"
         bodyClassName="p-8 md:p-10"
       >
-        {/* Coordinate tag — top-right of body */}
+        {/* Coordinate — top-right of body */}
         <Coordinate className="absolute right-4 top-3 md:right-6">
-          {'[ node_01 · 042,117 ]'}
+          {'[ node_01 · 200 OK ]'}
         </Coordinate>
 
-        {/* Staggered on-mount reveal */}
-        <MountReveal className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
 
-          {/* 1. Kicker: Node + // identity */}
-          <MountRevealItem className="flex items-center gap-3">
-            <Node pulse />
-            <span className="font-mono text-label uppercase tracking-[0.18em] text-fg3">
-              {'// identity'}
-            </span>
-          </MountRevealItem>
+          {/* ── 1. Query line ──────────────────────────────────────────── */}
+          <div className="font-mono text-sm leading-relaxed text-fg2" aria-label={`Query: ${QUERY_STRING}`}>
+            <span className="text-fg3 select-none">$ </span>
+            <span>{animate ? displayed : QUERY_STRING}</span>
+            {/* Blinking caret — shown while typing */}
+            {animate && !typingDone && (
+              <motion.span
+                aria-hidden="true"
+                className="ml-px inline-block border border-fg2"
+                style={{ width: '0.55ch', height: '1em', verticalAlign: 'text-bottom' }}
+                animate={{ opacity: [1, 0] }}
+                transition={{ duration: 0.7, repeat: Infinity, repeatType: 'reverse', ease: 'linear' }}
+              />
+            )}
+          </div>
 
-          {/* 2. Wordmark — 3D extruded glow */}
-          <MountRevealItem>
-            <h1
-              className="font-sans font-bold uppercase text-fg"
-              style={{
-                fontSize: 'clamp(40px,7.5vw,76px)',
-                lineHeight: 0.92,
-                letterSpacing: '.005em',
-                textShadow:
-                  '0 1px 0 rgba(133,174,191,.9), 0 2px 0 rgba(110,148,164,.85), 0 3px 0 rgba(88,120,135,.8), 0 4px 0 rgba(66,92,105,.74), 0 5px 0 rgba(48,68,78,.68), 0 6px 2px rgba(0,0,0,.5), 0 0 34px rgba(178,213,229,.5), 0 12px 28px rgba(0,0,0,.65)',
-              }}
+          {/* ── 2. Status badge ────────────────────────────────────────── */}
+          <motion.div
+            initial={animate ? { opacity: 0, y: 4 } : false}
+            animate={resolved ? { opacity: 1, y: 0 } : animate ? { opacity: 0, y: 4 } : false}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+          >
+            <span
+              className="inline-flex items-center gap-2 rounded-md border border-line px-2.5 py-1 font-mono text-xs text-fg shadow-glow"
             >
-              {identity.name.toUpperCase()}
-            </h1>
-          </MountRevealItem>
+              <span className="text-fg2">200 OK</span>
+              <span className="text-fg3">·</span>
+              <span className="text-fg3">41ms</span>
+            </span>
+          </motion.div>
 
-          {/* 3. Axis separator */}
-          <MountRevealItem>
-            <Axis draw className="w-full" />
-          </MountRevealItem>
+          {/* ── 3. Result block — staggered reveal ─────────────────────── */}
+          {/*
+            The content is ALWAYS in the DOM (for SSR + SEO).
+            Animation is controlled via Framer animate prop, not conditional mount.
+          */}
+          <motion.div
+            className="flex flex-col gap-5"
+            variants={animate ? STAGGER_CONTAINER : undefined}
+            initial={animate ? 'hidden' : false}
+            animate={resolved ? 'visible' : animate ? 'hidden' : false}
+          >
 
-          {/* 4. Role line */}
-          <MountRevealItem>
-            <p className="font-mono text-label text-fg2">
+            {/* Wordmark */}
+            <motion.div variants={animate ? FADE_UP : undefined}>
+              <motion.h1
+                className="font-sans font-bold uppercase text-fg"
+                style={{
+                  fontSize: 'clamp(40px,7vw,72px)',
+                  lineHeight: 0.92,
+                  letterSpacing: '.005em',
+                  textShadow: WORDMARK_SHADOW,
+                }}
+                variants={breathingVariants ?? undefined}
+                initial={animate ? 'rest' : false}
+                animate={animate && resolved ? 'breathe' : animate ? 'rest' : false}
+              >
+                {identity.name.toUpperCase()}
+              </motion.h1>
+            </motion.div>
+
+            {/* Role comment line */}
+            <motion.p
+              className="font-mono text-sm text-fg2"
+              variants={animate ? FADE_UP : undefined}
+            >
               {'// '}
               {identity.title.toLowerCase()}
-            </p>
-          </MountRevealItem>
+            </motion.p>
 
-          {/* 5. Skill chips — 6 representative picks */}
-          <MountRevealItem className="flex flex-wrap gap-2">
-            {heroSkills.map((skill) => (
-              <Chip key={skill}>{skill.toLowerCase()}</Chip>
-            ))}
-          </MountRevealItem>
+            {/* JSON-ish field block */}
+            <motion.div
+              className="flex flex-col gap-2 font-mono text-sm"
+              variants={animate ? FADE_UP : undefined}
+            >
+              {/* role: */}
+              <div>
+                <span className="text-fg3">role: </span>
+                <span className="text-fg">&quot;{identity.title}&quot;</span>
+              </div>
 
-          {/* 6. Telemetry line — first 4 stats */}
-          <MountRevealItem>
-            <p className="font-mono text-label text-fg3">{telemetry}</p>
-          </MountRevealItem>
+              {/* stack: chips */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-fg3">stack: </span>
+                {heroSkills.map((skill) => (
+                  <Chip key={skill}>{skill.toLowerCase()}</Chip>
+                ))}
+              </div>
 
-        </MountReveal>
+              {/* status: online */}
+              <div className="flex items-center gap-2">
+                <span className="text-fg3">status: </span>
+                <span className="text-fg">online</span>
+                <Node pulse />
+              </div>
+            </motion.div>
+
+            {/* Telemetry footer */}
+            <motion.p
+              className="font-mono text-xs text-fg3"
+              variants={animate ? FADE_UP : undefined}
+            >
+              {telemetry}
+            </motion.p>
+
+          </motion.div>
+        </div>
       </ConsolePanel>
 
       {/* Scroll cue — absolute bottom-center → #snapshot */}
@@ -141,3 +278,11 @@ export function Hero() {
 }
 
 export default Hero;
+
+/* ── Wordmark shadow constants (authorized raw values per design spec §2) ── */
+
+const WORDMARK_SHADOW =
+  '0 1px 0 rgba(133,174,191,.9), 0 2px 0 rgba(110,148,164,.85), 0 3px 0 rgba(88,120,135,.8), 0 4px 0 rgba(66,92,105,.74), 0 5px 0 rgba(48,68,78,.68), 0 6px 2px rgba(0,0,0,.5), 0 0 34px rgba(178,213,229,.5), 0 12px 28px rgba(0,0,0,.65)';
+
+const WORDMARK_SHADOW_GLOW =
+  '0 1px 0 rgba(133,174,191,.9), 0 2px 0 rgba(110,148,164,.85), 0 3px 0 rgba(88,120,135,.8), 0 4px 0 rgba(66,92,105,.74), 0 5px 0 rgba(48,68,78,.68), 0 6px 2px rgba(0,0,0,.5), 0 0 48px rgba(178,213,229,.7), 0 12px 28px rgba(0,0,0,.65)';
