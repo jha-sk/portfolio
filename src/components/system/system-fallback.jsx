@@ -126,7 +126,7 @@ export function SystemFallback() {
             style={{ background: 'var(--fg)', boxShadow: '0 0 12px var(--fg)' }}
             aria-hidden="true"
           />
-          career-os://system — live topology
+          sourabh-jha://system — live topology
         </div>
 
         {/* HUD — top-right telemetry */}
@@ -144,13 +144,6 @@ export function SystemFallback() {
 
         {/* Center — identity wordmark */}
         <div className="relative z-10 flex flex-col items-center gap-2 text-center">
-          <p
-            className="font-mono text-[10px] tracking-[0.26em] uppercase"
-            style={{ color: 'rgba(178,213,229,0.5)' }}
-          >
-            {'// core · online'}
-          </p>
-
           <h1
             className="font-sans font-bold uppercase leading-none"
             style={{

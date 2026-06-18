@@ -59,13 +59,14 @@ export function Contact() {
   const [values, setValues] = useState({ name: '', email: '', message: '' });
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [status, setStatus] = useState('idle'); // idle | submitting | error
 
   function handleChange(e) {
     const { name, value } = e.target;
     setValues((prev) => ({ ...prev, [name]: value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     const errs = validate(values);
     if (errs) {
@@ -73,17 +74,34 @@ export function Contact() {
       return;
     }
     setErrors({});
-    setSubmitted(true);
+    setStatus('submitting');
+
+    try {
+      // Real delivery via the Resend-backed API route.
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+      if (!res.ok) throw new Error('send failed');
+      setSubmitted(true);
+      setStatus('idle');
+    } catch (_) {
+      setStatus('error');
+    }
   }
 
   function handleReset() {
     setValues({ name: '', email: '', message: '' });
     setErrors({});
     setSubmitted(false);
+    setStatus('idle');
   }
 
   const liveMessage = submitted
     ? 'Transmission successful.'
+    : status === 'error'
+    ? 'Transmission failed. Please try again or email directly.'
     : errors.name || errors.email || errors.message
     ? 'Form has errors. Please review and correct them.'
     : '';
@@ -212,10 +230,24 @@ export function Contact() {
 
                 <button
                   type="submit"
-                  className="font-mono text-label border border-line-strong px-6 py-2.5 rounded-md hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-fg transition-shadow duration-200"
+                  disabled={status === 'submitting'}
+                  className="font-mono text-label border border-line-strong px-6 py-2.5 rounded-md hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring text-fg transition-shadow duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  INITIATE TRANSMISSION
+                  {status === 'submitting' ? 'TRANSMITTING…' : 'INITIATE TRANSMISSION'}
                 </button>
+
+                {status === 'error' && (
+                  <div
+                    role="alert"
+                    className="flex items-center gap-1.5 font-mono text-label text-fg2"
+                  >
+                    <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                    Transmission failed — try again, or email{' '}
+                    <a href={`mailto:${links.email}`} className="underline hover:text-fg">
+                      {links.email}
+                    </a>
+                  </div>
+                )}
               </form>
             )}
 

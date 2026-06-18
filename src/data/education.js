@@ -1,5 +1,5 @@
 /*
- * Career OS content data — education.
+ * Sourabh Jha portfolio content data — education.
  */
 export const education = [
   {

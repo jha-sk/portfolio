@@ -1,5 +1,5 @@
 /*
- * Career OS content data — dashboard telemetry stats.
+ * Sourabh Jha portfolio content data — dashboard telemetry stats.
  */
 export const stats = [
   { id: 'uptime', label: 'System Availability', value: '99.9%' },

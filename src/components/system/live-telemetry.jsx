@@ -113,14 +113,22 @@ function Sparkline({ points, isReduced }) {
 }
 
 /* ── Chip ─────────────────────────────────────────────────────────────────── */
-function Chip({ label, value, extra }) {
+function Metric({ label, value, extra, withDivider }) {
   return (
     <span
-      className="rounded-full border px-3 py-1 font-mono text-[10px]"
-      style={{ borderColor: ICE_BORDER, color: ICE, whiteSpace: 'nowrap' }}
+      className="inline-flex items-center font-mono text-[10px]"
+      style={{
+        whiteSpace: 'nowrap',
+        color: ICE,
+        ...(withDivider
+          ? { marginLeft: '13px', paddingLeft: '13px', borderLeft: '1px solid rgba(178,213,229,0.2)' }
+          : {}),
+      }}
     >
-      {label}{' '}
-      <b style={{ color: FG }}>{value}</b>
+      <span style={{ textTransform: 'uppercase', letterSpacing: '0.11em', color: 'rgba(178,213,229,0.5)' }}>
+        {label}
+      </span>
+      <b style={{ color: FG, marginLeft: '6px', fontWeight: 700 }}>{value}</b>
       {extra}
     </span>
   );
@@ -202,12 +210,23 @@ export function LiveTelemetry() {
   /* ── Render ──────────────────────────────────────────────────────────── */
   return (
     <div
-      className="absolute right-5 top-5 z-10 flex flex-wrap justify-end gap-2"
-      style={{ maxWidth: '62vw', pointerEvents: 'none' }}
+      className="flex shrink-0 items-center justify-end"
+      style={{
+        marginLeft: 'auto',
+        whiteSpace: 'nowrap',
+        pointerEvents: 'none',
+        padding: '8px 14px',
+        borderRadius: '16px',
+        background: 'rgba(10,18,23,0.45)',
+        backdropFilter: 'blur(22px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(22px) saturate(140%)',
+        border: '1px solid rgba(178,213,229,0.18)',
+        boxShadow: '0 10px 44px rgba(0,0,0,0.5), inset 0 1px 0 rgba(178,213,229,0.10)',
+      }}
       aria-label="System telemetry"
     >
-      {/* Live req/s chip — first */}
-      <Chip
+      {/* Live req/s — first */}
+      <Metric
         label="req/s"
         value={reqVal}
         extra={
@@ -217,7 +236,7 @@ export function LiveTelemetry() {
         }
       />
 
-      {/* Static stats with count-up */}
+      {/* Static stats with count-up, divider-separated */}
       {stats.map((s, i) => {
         const parsed = parseStatValue(s.value);
         let display;
@@ -228,9 +247,7 @@ export function LiveTelemetry() {
           const animated = parsed * progress;
           display = rehydrateValue(s.value, animated);
         }
-        return (
-          <Chip key={s.id} label={s.id} value={display} />
-        );
+        return <Metric key={s.id} label={s.id} value={display} withDivider />;
       })}
     </div>
   );

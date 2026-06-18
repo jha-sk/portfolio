@@ -23,10 +23,10 @@
  * DOM overlay (node labels via drei <Html>) uses CSS vars where possible.
  */
 
-import { useRef, useState, useCallback, useMemo } from 'react';
+import { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Html, Line, MeshReflectorMaterial } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette, Noise, ChromaticAberration } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette, Noise, DepthOfField } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 
@@ -35,38 +35,74 @@ const ICE      = '#B2D5E5';
 const ICE_HEX  = 0xb2d5e5;
 const VOID     = '#020202';
 
-// Vivid data-center colours
-const CYAN_BRIGHT  = '#bfe6f5';   // core primary
-const CYAN_EMIS    = '#7fd4ee';   // core emissive
-const NODE_COLOR   = '#5fd0e6';   // service node solid
-const NODE_EMIS    = '#2aa7c8';   // service node emissive
-const DB_COLOR     = '#1aa7c0';   // database cylinder
-const DB_EMIS      = '#0e6e80';   // database emissive
-const DB_RING      = '#3dd6e8';   // database ring accent
-const PACKET_COLOR = '#dffaff';   // traveling packets
-const EDGE_ICE     = '#9fd8ea';   // edge line colour
+// Dichromatic palette — ice-blue tints only (no green/amber/teal)
+const CYAN_BRIGHT  = '#d6ecf4';   // core primary (light ice)
+const CYAN_EMIS    = '#8fc4d8';   // core emissive (ice)
+const NODE_COLOR   = '#B2D5E5';   // service node solid (ice)
+const NODE_EMIS    = '#5f93a6';   // service node emissive (deep ice)
+const DB_COLOR     = '#9fc6d6';   // database cylinder (ice)
+const DB_EMIS      = '#4f7c8a';   // database emissive (deep ice)
+const DB_RING      = '#cfe7f2';   // database ring accent (light ice)
+const PACKET_COLOR = '#eaf6fb';   // traveling packets (near-white)
+const EDGE_ICE     = '#9fd8ea';   // edge line colour (ice)
 
-// Server rack LED colours (status lights: green, amber, ice)
-const LED_GREEN = '#46d17f';
-const LED_AMBER = '#e8b34a';
-const LED_ICE   = '#9fdcea';
+// Server rack unit lights — dichromatic ice tints (varied lightness for texture)
+const LED_GREEN = '#9fdcea';
+const LED_AMBER = '#cfe7f2';
+const LED_ICE   = '#7fb8cc';
+
+/* ── Node pulse registry ───────────────────────────────────────────────────
+   Packets stamp the clock-time of their arrival per node key; nodes read it
+   each frame and briefly flare, so the flow looks causal. Module-level
+   singleton — the scene is a single instance on the page. */
+const NODE_PULSE = new Map();
+const PULSE_DECAY = 0.55; // seconds for a flare to fade
+function firePulse(key, time) {
+  if (key) NODE_PULSE.set(key, time);
+}
+function pulseAmount(key, time) {
+  const last = NODE_PULSE.get(key);
+  if (last == null) return 0;
+  const dt = time - last;
+  if (dt < 0 || dt > PULSE_DECAY) return 0;
+  return 1 - dt / PULSE_DECAY;
+}
 
 /* ── Service-node configuration ─────────────────────────────────────────── */
 const NODES_CONFIG = [
-  { name: 'client',       position: [-12, 1.2,  7 ], hot: 'edge / entrypoint' },
-  { name: 'gateway',      position: [ -6, 1.6,  4 ], hot: 'api gateway' },
-  { name: 'api · Go',     position: [  6, 2.7, -2 ], hot: 'service: REST / gRPC' },
-  { name: 'cloud · k8s',  position: [  5, 2.4,  4 ], hot: 'AWS · Kubernetes · Terraform' },
-  { name: 'worker · tf',  position: [ -5.5, 2.1, -4], hot: 'jobs / automation / terraform' },
-  { name: 'cache',        position: [ -3, 1.6,  6 ], hot: 'in-memory cache' },
+  { name: 'client',       position: [-18, 1.2, 11 ], hot: 'edge / entrypoint' },
+  { name: 'gateway',      position: [-10, 2.0,  4 ], hot: 'api gateway' },
+  { name: 'api · Go',     position: [ 13, 2.8, -6 ], hot: 'service: REST / gRPC' },
+  { name: 'cloud · k8s',  position: [ 15, 2.2,  8 ], hot: 'AWS · Kubernetes · Terraform' },
+  { name: 'worker · tf',  position: [ -9, 2.6, -11], hot: 'jobs / automation / terraform' },
+  { name: 'cache',        position: [ -4, 1.6, 13 ], hot: 'in-memory cache' },
 ];
 
-/* ── Rack positions ──────────────────────────────────────────────────────── */
+/* ── Rack positions (interactive — open Projects) ────────────────────────── */
 const RACK_CONFIGS = [
-  { position: [-11, 0, -11], name: 'rack-01' },
-  { position: [ 11, 0, -11], name: 'rack-02' },
-  { position: [-11, 0,  11], name: 'rack-03' },
-  { position: [ 11, 0,  11], name: 'rack-04' },
+  { position: [-14, 0, -14], name: 'rack-01' },
+  { position: [ 14, 0, -14], name: 'rack-02' },
+  { position: [-14, 0,  14], name: 'rack-03' },
+  { position: [ 14, 0,  14], name: 'rack-04' },
+];
+
+/* ── Ambient server racks (decorative — build the server-room aisles) ─────── */
+// Rows framing the scene; non-interactive, lighter geometry, same palette.
+const AMBIENT_RACKS = [
+  // back wall row
+  ...[-18, -12, -6, 0, 6, 12, 18].map((x) => [x, 0, -22]),
+  // left aisle
+  ...[-14, -8, -2, 4].map((z) => [-22, 0, z]),
+  // right aisle
+  ...[-14, -8, -2, 4].map((z) => [22, 0, z]),
+];
+
+/* ── Cooling towers (decorative — far corners) ───────────────────────────── */
+const COOLING_TOWERS = [
+  [-25, 0, -25],
+  [ 25, 0, -25],
+  [-25, 0,  25],
+  [ 25, 0,  25],
 ];
 
 /* ── Rack positions as Vector3 for edge connections ─────────────────────── */
@@ -94,44 +130,11 @@ const FOCUS_TARGETS = {
   about:      { target: [0, 1.8, 0],               camOffset: [0, 3, 8]    },
   skills:     { target: SKILL_NODE_CLUSTER_CENTER,  camOffset: [0, 5, 12]   },
   projects:   { target: RACK_CLUSTER_CENTER,        camOffset: [0, 6, 14]   },
-  experience: { target: [0, 1.3, -7.5],             camOffset: [0, 4, 2]    },
+  experience: { target: [0, 1.3, -13],              camOffset: [0, 4, 4]    },
   contact:    { target: [0, 1.8, 0],               camOffset: [0, 3, 8]    },
   // null / overview
-  overview:   { target: [0, 1.8, 0],               camOffset: [0, 7, 17]   },
+  overview:   { target: [0, 1.8, 0],               camOffset: [0, 9, 24]   },
 };
-
-/* ── Particles ───────────────────────────────────────────────────────────── */
-function Particles() {
-  const ref = useRef();
-  const count = 320;
-  const positions = useMemo(() => {
-    const arr = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      arr[i * 3]     = (Math.random() - 0.5) * 60;
-      arr[i * 3 + 1] = Math.random() * 22;
-      arr[i * 3 + 2] = (Math.random() - 0.5) * 60;
-    }
-    return arr;
-  }, []);
-
-  useFrame((_, dt) => {
-    if (ref.current) ref.current.rotation.y += dt * 0.012;
-  });
-
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          array={positions}
-          count={count}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial color={ICE_HEX} size={0.07} transparent opacity={0.55} />
-    </points>
-  );
-}
 
 /* ── RadarRing ───────────────────────────────────────────────────────────── */
 function RadarRing() {
@@ -154,7 +157,7 @@ function RadarRing() {
 }
 
 /* ── Core (identity icosahedron) ─────────────────────────────────────────── */
-function Core({ onSelect }) {
+function Core({ onSelect, onFocus }) {
   const coreRef = useRef();
   const glowRef = useRef();
   const shellRef = useRef();
@@ -173,20 +176,25 @@ function Core({ onSelect }) {
 
   const handleClick = useCallback((e) => {
     e.stopPropagation();
+    onFocus?.([0, 1.8, 0]);
     onSelect?.('about');
-  }, [onSelect]);
+  }, [onSelect, onFocus]);
 
   useFrame((state, dt) => {
+    const t = state.clock.elapsedTime;
+    const pulse = pulseAmount('core', t);
     if (coreRef.current) {
       coreRef.current.rotation.y += dt * 0.3;
       coreRef.current.rotation.x += dt * 0.1;
+      if (coreRef.current.material) {
+        coreRef.current.material.emissiveIntensity = (hovered ? 0.8 : 0.4) + pulse * 1.4;
+      }
     }
     if (shellRef.current) {
       shellRef.current.rotation.y -= dt * 0.15;
     }
     if (glowRef.current) {
-      const t = state.clock.elapsedTime;
-      glowRef.current.scale.setScalar(1 + Math.sin(t * 1.6) * 0.06);
+      glowRef.current.scale.setScalar(1 + Math.sin(t * 1.6) * 0.06 + pulse * 0.12);
     }
   });
 
@@ -227,7 +235,7 @@ function Core({ onSelect }) {
 }
 
 /* ── ServiceNode ─────────────────────────────────────────────────────────── */
-function ServiceNode({ config, index, onSelect }) {
+function ServiceNode({ config, index, onSelect, onFocus }) {
   const ref = useRef();
   const [hovered, setHovered] = useState(false);
 
@@ -244,15 +252,20 @@ function ServiceNode({ config, index, onSelect }) {
 
   const handleClick = useCallback((e) => {
     e.stopPropagation();
+    onFocus?.(config.position);
     onSelect?.('skills');
-  }, [onSelect]);
+  }, [onSelect, onFocus, config.position]);
 
   useFrame((state, dt) => {
     if (!ref.current) return;
     ref.current.rotation.y += dt * 0.6;
     const t = state.clock.elapsedTime;
-    const targetScale = (hovered ? 1.5 : 1) + Math.sin(t * 2 + index) * 0.07;
-    ref.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.12);
+    const pulse = pulseAmount(config.name, t);
+    const targetScale = (hovered ? 1.5 : 1) + Math.sin(t * 2 + index) * 0.07 + pulse * 0.55;
+    ref.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.18);
+    if (ref.current.material) {
+      ref.current.material.emissiveIntensity = (hovered ? 1.4 : 0.8) + pulse * 1.8;
+    }
   });
 
   return (
@@ -281,8 +294,35 @@ function ServiceNode({ config, index, onSelect }) {
   );
 }
 
+/* ── Led (flickering status indicator) ───────────────────────────────────── */
+function Led({ color, position }) {
+  const matRef = useRef();
+  const seed = useMemo(() => Math.random() * 10, []);
+
+  useFrame((state) => {
+    if (!matRef.current) return;
+    const t = state.clock.elapsedTime;
+    // mostly-on with occasional dips — reads like live activity
+    const f = Math.sin(t * 3 + seed) * Math.sin(t * 1.3 + seed * 2);
+    matRef.current.opacity = 0.55 + 0.45 * Math.max(0, f);
+  });
+
+  return (
+    <group position={position}>
+      <mesh>
+        <planeGeometry args={[0.09, 0.09]} />
+        <meshBasicMaterial ref={matRef} color={color} transparent />
+      </mesh>
+      <mesh>
+        <planeGeometry args={[0.16, 0.16]} />
+        <meshBasicMaterial color={color} transparent opacity={0.18} />
+      </mesh>
+    </group>
+  );
+}
+
 /* ── Rack ────────────────────────────────────────────────────────────────── */
-function Rack({ config, onSelect }) {
+function Rack({ config, onSelect, onFocus }) {
   const [x, , z] = config.position;
   const rotY = Math.atan2(-x, -z);
   const [hovered, setHovered] = useState(false);
@@ -300,8 +340,9 @@ function Rack({ config, onSelect }) {
 
   const handleClick = useCallback((e) => {
     e.stopPropagation();
+    onFocus?.([x, 2, z]);
     onSelect?.('projects');
-  }, [onSelect]);
+  }, [onSelect, onFocus, x, z]);
 
   return (
     <group
@@ -337,15 +378,8 @@ function Rack({ config, onSelect }) {
               <planeGeometry args={[1.8, 0.18]} />
               <meshStandardMaterial color="#091318" metalness={0.5} roughness={0.5} />
             </mesh>
-            {/* glowing LED indicator */}
-            <mesh position={[0.72, 0, 0.001]}>
-              <planeGeometry args={[0.09, 0.09]} />
-              <meshBasicMaterial color={ledColor} />
-            </mesh>
-            <mesh position={[0.72, 0, 0.001]}>
-              <planeGeometry args={[0.16, 0.16]} />
-              <meshBasicMaterial color={ledColor} transparent opacity={0.18} />
-            </mesh>
+            {/* glowing, flickering LED indicator */}
+            <Led color={ledColor} position={[0.72, 0, 0.001]} />
           </group>
         );
       })}
@@ -357,8 +391,90 @@ function Rack({ config, onSelect }) {
   );
 }
 
+/* ── AmbientRack (decorative server cabinet — no label / no click) ───────── */
+function AmbientRack({ position }) {
+  const [x, , z] = position;
+  const rotY = Math.atan2(-x, -z);
+
+  return (
+    <group position={position} rotation={[0, rotY, 0]}>
+      {/* solid metallic cabinet body — slightly darker so the hero racks read brighter */}
+      <mesh position={[0, 1.8, 0]}>
+        <boxGeometry args={[2.4, 3.6, 1.4]} />
+        <meshStandardMaterial color="#0a151b" metalness={0.6} roughness={0.45} />
+      </mesh>
+      {/* subtle ice-blue edge outline */}
+      <lineSegments position={[0, 1.8, 0]}>
+        <edgesGeometry args={[new THREE.BoxGeometry(2.4, 3.6, 1.4)]} />
+        <lineBasicMaterial color={EDGE_ICE} transparent opacity={0.28} />
+      </lineSegments>
+      {/* 4 status LED strips (lighter than the interactive racks) */}
+      {Array.from({ length: 4 }, (_, i) => {
+        const ledColor = LED_PALETTE[(i + 1) % LED_PALETTE.length];
+        return (
+          <group key={i} position={[0, 0.75 + i * 0.7, 0.71]}>
+            <mesh>
+              <planeGeometry args={[1.8, 0.16]} />
+              <meshStandardMaterial color="#091318" metalness={0.5} roughness={0.5} />
+            </mesh>
+            <mesh position={[0.72, 0, 0.001]}>
+              <planeGeometry args={[0.08, 0.08]} />
+              <meshBasicMaterial color={ledColor} transparent opacity={0.85} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+/* ── CoolingTower (decorative — tall finned cylinder + spinning fan + shaft) ── */
+function CoolingTower({ position, index = 0 }) {
+  const fanRef = useRef();
+
+  useFrame((_, dt) => {
+    // alternate spin direction per tower for life
+    if (fanRef.current) fanRef.current.rotation.y += dt * (index % 2 ? -1.8 : 1.8);
+  });
+
+  return (
+    <group position={position}>
+      {/* tall body */}
+      <mesh position={[0, 3.2, 0]}>
+        <cylinderGeometry args={[1.3, 1.5, 6.4, 20, 1, false]} />
+        <meshStandardMaterial color="#0b161c" metalness={0.55} roughness={0.5} />
+      </mesh>
+      {/* ice-blue fin rings */}
+      {[1.4, 2.6, 3.8, 5.0].map((y) => (
+        <mesh key={y} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[1.5, 0.06, 6, 28]} />
+          <meshBasicMaterial color={EDGE_ICE} transparent opacity={0.4} />
+        </mesh>
+      ))}
+      {/* glowing vent cap */}
+      <mesh position={[0, 6.45, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.4, 1.2, 24]} />
+        <meshBasicMaterial color={LED_ICE} transparent opacity={0.5} side={THREE.DoubleSide} />
+      </mesh>
+      {/* spinning intake fan */}
+      <group ref={fanRef} position={[0, 6.5, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.12, 0.12, 0.18, 10]} />
+          <meshStandardMaterial color="#0d1b22" metalness={0.6} roughness={0.4} />
+        </mesh>
+        {[0, 1, 2, 3].map((b) => (
+          <mesh key={b} rotation={[0, (b * Math.PI) / 2, 0]} position={[0.45, 0.02, 0]}>
+            <boxGeometry args={[0.9, 0.02, 0.22]} />
+            <meshStandardMaterial color={DB_COLOR} emissive={DB_EMIS} emissiveIntensity={0.4} metalness={0.4} roughness={0.4} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+}
+
 /* ── Database cylinder ───────────────────────────────────────────────────── */
-function Database({ onSelect }) {
+function Database({ onSelect, onFocus }) {
   const bodyRef = useRef();
   const [hovered, setHovered] = useState(false);
 
@@ -375,16 +491,22 @@ function Database({ onSelect }) {
 
   const handleClick = useCallback((e) => {
     e.stopPropagation();
+    onFocus?.([0, 1.3, -13]);
     onSelect?.('experience');
-  }, [onSelect]);
+  }, [onSelect, onFocus]);
 
-  useFrame((_, dt) => {
-    if (bodyRef.current) bodyRef.current.rotation.y += dt * 0.25;
+  useFrame((state, dt) => {
+    if (!bodyRef.current) return;
+    bodyRef.current.rotation.y += dt * 0.25;
+    const pulse = pulseAmount('db', state.clock.elapsedTime);
+    if (bodyRef.current.material) {
+      bodyRef.current.material.emissiveIntensity = (hovered ? 1.6 : 0.9) + pulse * 1.8;
+    }
   });
 
   return (
     <group
-      position={[0, 0, -7.5]}
+      position={[0, 0, -13]}
       onPointerOver={handleOver}
       onPointerOut={handleOut}
       onClick={handleClick}
@@ -427,12 +549,12 @@ function Edge({ start, end, bright = false }) {
       color={EDGE_ICE}
       lineWidth={1}
       transparent
-      opacity={bright ? 0.6 : 0.35}
+      opacity={bright ? 0.6 : 0.22}
     />
   );
 }
 
-function Packet({ start, end, speed, bright = false }) {
+function Packet({ start, end, speed, bright = false, endKey }) {
   const ref  = useRef();
   const tRef = useRef(Math.random());
   const a = useMemo(
@@ -444,9 +566,12 @@ function Packet({ start, end, speed, bright = false }) {
     [end]
   );
 
-  useFrame((_, dt) => {
+  useFrame((state, dt) => {
     tRef.current += dt * speed;
-    if (tRef.current > 1) tRef.current -= 1;
+    if (tRef.current > 1) {
+      tRef.current -= 1;
+      firePulse(endKey, state.clock.elapsedTime); // arrived at destination
+    }
     if (ref.current) ref.current.position.lerpVectors(a, b, tRef.current);
   });
 
@@ -460,24 +585,35 @@ function Packet({ start, end, speed, bright = false }) {
 
 /* ── Edges + Packets scene layer ─────────────────────────────────────────── */
 const CORE_POS = [0, 1.8, 0];
-const DB_POS   = [0, 1.3, -7.5];
+const DB_POS   = [0, 1.3, -13];
 
 const NP_EDGES = NODES_CONFIG.map(n => n.position);
 
-const EDGE_DEFS = [
-  // request spine (bright)
-  { start: NP_EDGES[0], end: NP_EDGES[1],      bright: true,  packet: true },
-  { start: NP_EDGES[1], end: CORE_POS,   bright: true,  packet: true },
-  // core → services
-  { start: CORE_POS, end: NP_EDGES[2],   bright: false, packet: true },
-  { start: CORE_POS, end: NP_EDGES[3],   bright: false, packet: true },
-  { start: CORE_POS, end: NP_EDGES[4],   bright: false, packet: true },
-  { start: CORE_POS, end: NP_EDGES[5],   bright: false, packet: true },
-  // services → db
-  { start: NP_EDGES[2], end: DB_POS,     bright: false, packet: true },
-  { start: NP_EDGES[4], end: DB_POS,     bright: false, packet: true },
-  { start: CORE_POS, end: DB_POS,  bright: true,  packet: true },
-];
+/* Every hub in the live system: core + service nodes + database. */
+const HUBS = [CORE_POS, ...NP_EDGES, DB_POS];
+const HUB_KEYS = ['core', ...NODES_CONFIG.map(n => n.name), 'db'];
+
+/* Complete graph — every hub linked to every other, each carrying a packet.
+   Edges touching the core read brighter; the rest are an atmospheric mesh.
+   Direction is randomized so packets arrive at (and pulse) every node. */
+const CORE_INDEX = 0;
+const MESH_EDGES = [];
+for (let i = 0; i < HUBS.length; i++) {
+  for (let j = i + 1; j < HUBS.length; j++) {
+    const flip = Math.random() < 0.5;
+    const s = flip ? j : i;
+    const e = flip ? i : j;
+    const touchesCore = i === CORE_INDEX || j === CORE_INDEX;
+    MESH_EDGES.push({
+      start: HUBS[s],
+      end: HUBS[e],
+      endKey: HUB_KEYS[e],
+      bright: touchesCore,
+      // far fewer packets: core links always flow, others only occasionally
+      packet: touchesCore || Math.random() < 0.18,
+    });
+  }
+}
 
 // services → nearest rack (alternating)
 const RACK_EDGES = [2, 3, 4, 5].map((ni, k) => ({
@@ -487,7 +623,31 @@ const RACK_EDGES = [2, 3, 4, 5].map((ni, k) => ({
   packet: k % 2 === 0,
 }));
 
-const ALL_EDGES = [...EDGE_DEFS, ...RACK_EDGES];
+/* Link every perimeter object (ambient racks + cooling towers) into the
+   network via its nearest hub, so the flow reaches the whole server room. */
+function nearestHub(p) {
+  let best = HUBS[0];
+  let bestD = Infinity;
+  for (const h of HUBS) {
+    const dx = h[0] - p[0];
+    const dz = h[2] - p[2];
+    const d = dx * dx + dz * dz;
+    if (d < bestD) { bestD = d; best = h; }
+  }
+  return best;
+}
+
+const AMBIENT_EDGES = [
+  // perimeter objects stay wired (lines) but carry no packets — keeps it calm
+  ...AMBIENT_RACKS.map(p => ({
+    start: [p[0], 2.2, p[2]], end: nearestHub(p), bright: false, packet: false,
+  })),
+  ...COOLING_TOWERS.map(p => ({
+    start: [p[0], 3.2, p[2]], end: nearestHub(p), bright: false, packet: false,
+  })),
+];
+
+const ALL_EDGES = [...MESH_EDGES, ...RACK_EDGES, ...AMBIENT_EDGES];
 
 function EdgesAndPackets() {
   return (
@@ -501,9 +661,71 @@ function EdgesAndPackets() {
           start={e.start}
           end={e.end}
           bright={e.bright}
-          speed={(e.bright ? 0.3 : 0.18) + Math.random() * 0.2}
+          endKey={e.endKey}
+          speed={(e.bright ? 0.07 : 0.05) + Math.random() * 0.03}
         />
       ))}
+    </>
+  );
+}
+
+/* ── Trace-a-request ──────────────────────────────────────────────────────
+   On each runId bump, a bright packet travels the full request path
+   (client → gateway → core → api → db), drawing a glowing trail behind it
+   and pulsing each hop as it arrives. */
+const TRACE_PATH = [NP_EDGES[0], NP_EDGES[1], CORE_POS, NP_EDGES[2], DB_POS];
+
+function Trace({ runId }) {
+  const headRef = useRef();
+  const haloRef = useRef();
+  const [trail, setTrail] = useState(null);
+  const run = useRef({ active: false, dist: 0 });
+
+  const { pts, cum, total } = useMemo(() => {
+    const p = TRACE_PATH.map((v) => new THREE.Vector3(...v));
+    const c = [0];
+    for (let i = 1; i < p.length; i++) c.push(c[i - 1] + p[i].distanceTo(p[i - 1]));
+    return { pts: p, cum: c, total: c[c.length - 1] };
+  }, []);
+
+  useEffect(() => {
+    if (runId > 0) run.current = { active: true, dist: 0 };
+  }, [runId]);
+
+  useFrame((_, dt) => {
+    const r = run.current;
+    if (!r.active) return;
+    r.dist += dt * 9; // units / sec along the path
+    if (r.dist >= total) {
+      r.active = false;
+      setTrail(null);
+      return;
+    }
+    let seg = 0;
+    while (seg < cum.length - 1 && r.dist > cum[seg + 1]) seg++;
+    const segLen = (cum[seg + 1] - cum[seg]) || 1;
+    const f = (r.dist - cum[seg]) / segLen;
+    const cur = new THREE.Vector3().lerpVectors(pts[seg], pts[seg + 1], f);
+    if (headRef.current) headRef.current.position.copy(cur);
+    if (haloRef.current) haloRef.current.position.copy(cur);
+    const tp = [];
+    for (let i = 0; i <= seg; i++) tp.push(pts[i].toArray());
+    tp.push(cur.toArray());
+    setTrail(tp);
+  });
+
+  if (!trail) return null;
+  return (
+    <>
+      <Line points={trail} color={PACKET_COLOR} lineWidth={2.4} transparent opacity={0.95} />
+      <mesh ref={headRef}>
+        <sphereGeometry args={[0.22, 12, 12]} />
+        <meshBasicMaterial color={PACKET_COLOR} />
+      </mesh>
+      <mesh ref={haloRef}>
+        <sphereGeometry args={[0.55, 12, 12]} />
+        <meshBasicMaterial color={PACKET_COLOR} transparent opacity={0.16} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
     </>
   );
 }
@@ -516,53 +738,116 @@ function CameraRig() {
   useFrame((_, dt) => {
     if (introRef.current > 0) {
       introRef.current = Math.max(0, introRef.current - dt * 0.4);
-      camera.position.y = 7 + introRef.current * 9;
-      camera.position.z = 17 + introRef.current * 9;
+      camera.position.y = 9 + introRef.current * 9;
+      camera.position.z = 24 + introRef.current * 10;
     }
   });
 
   return null;
 }
 
-/* ── Camera fly-to on active section ────────────────────────────────────── */
+/* ── Camera fly-to on active section / focused node ─────────────────────── */
 const _tmpTarget = new THREE.Vector3();
 const _tmpCamPos = new THREE.Vector3();
 
-function CameraFlyTo({ active, controlsRef }) {
+/* Cinematic camera placement: dolly in close along the node's radial
+   direction, slightly elevated, so the clicked object fills the frame
+   with the rest of the topology behind it. */
+const CINE_DIST = 6;     // camera distance from the focused object
+const CINE_LIFT = 2.4;   // how far above the object the camera sits
+
+function cinematicCam(target) {
+  const [x, y, z] = target;
+  const radial = Math.hypot(x, z);
+  if (radial < 0.5) {
+    // central core — no radial direction; frame it head-on
+    return [x, y + CINE_LIFT, z + 8];
+  }
+  return [
+    x + (x / radial) * CINE_DIST,
+    y + CINE_LIFT,
+    z + (z / radial) * CINE_DIST,
+  ];
+}
+
+/* Default focus point per section (used when navigation comes from the HUD
+   dock rather than a direct 3D click). */
+const SECTION_FOCUS = {
+  about:      [0, 1.8, 0],
+  skills:     SKILL_NODE_CLUSTER_CENTER,
+  projects:   [-14, 2, -14],
+  experience: [0, 1.3, -13],
+  contact:    [0, 1.8, 0],
+};
+
+function CameraFlyTo({ active, focus, controlsRef }) {
   const { camera } = useThree();
+  const prevActiveRef = useRef(active);
+  const returnRef = useRef(0); // seconds left flying back to overview
 
   useFrame((_, dt) => {
     const controls = controlsRef.current;
     if (!controls) return;
 
-    const key = active ?? 'overview';
-    const focus = FOCUS_TARGETS[key] ?? FOCUS_TARGETS.overview;
+    // ease toward the goal; clamp so big jumps stay smooth/cinematic
+    const speed = Math.min(dt * 2.2, 1);
 
-    // Build desired target and camera position
-    _tmpTarget.set(...focus.target);
-    const [ox, oy, oz] = focus.camOffset;
-    _tmpCamPos.set(
-      focus.target[0] + ox,
-      focus.target[1] + oy,
-      focus.target[2] + oz
-    );
+    // Detect a close (active → null): trigger a fly-back to overview.
+    if (prevActiveRef.current && !active) returnRef.current = 1.6;
+    prevActiveRef.current = active;
 
-    const speed = dt * 2.2;
+    const target = focus ?? (active ? SECTION_FOCUS[active] : null);
 
-    // Lerp controls target
-    controls.target.lerp(_tmpTarget, speed);
-
-    // Lerp camera position only when a section is active (give user freedom when overview)
-    if (active) {
+    if (active && target) {
+      // Cinematic per-node shot
+      _tmpTarget.set(...target);
+      _tmpCamPos.set(...cinematicCam(target));
+      controls.target.lerp(_tmpTarget, speed);
       camera.position.lerp(_tmpCamPos, speed);
+      controls.autoRotate = false;
+    } else {
+      // Overview — recenter the look-at; pull the camera back briefly after a
+      // close, then release control so the user can orbit freely.
+      const f = FOCUS_TARGETS.overview;
+      _tmpTarget.set(...f.target);
+      controls.target.lerp(_tmpTarget, speed);
+
+      if (returnRef.current > 0) {
+        returnRef.current -= dt;
+        _tmpCamPos.set(
+          f.target[0] + f.camOffset[0],
+          f.target[1] + f.camOffset[1],
+          f.target[2] + f.camOffset[2]
+        );
+        camera.position.lerp(_tmpCamPos, speed);
+        controls.autoRotate = false;
+      } else {
+        controls.autoRotate = true;
+      }
     }
 
     controls.update();
-
-    // Disable autoRotate while a panel is open
-    controls.autoRotate = !active;
   });
 
+  return null;
+}
+
+/* ── Depth-of-field driver ──────────────────────────────────────────────────
+   Smoothly ramps bokeh + focus target so the background blurs only when a node
+   is focused (cinematic), staying crisp in the overview. Mutates the DoF effect
+   via ref so DepthOfField can remain a direct EffectComposer child. */
+function DofDriver({ dofRef, focus }) {
+  const tgt = useMemo(() => new THREE.Vector3(0, 1.8, 0), []);
+  useFrame(() => {
+    const dof = dofRef.current;
+    if (!dof) return;
+    tgt.set(...(focus ?? [0, 1.8, 0]));
+    if (dof.target) dof.target.lerp(tgt, 0.08);
+    const goal = focus ? 3.2 : 0;
+    if (typeof dof.bokehScale === 'number') {
+      dof.bokehScale = THREE.MathUtils.lerp(dof.bokehScale, goal, 0.06);
+    }
+  });
   return null;
 }
 
@@ -593,7 +878,7 @@ function GridFloor() {
   return (
     <gridHelper
       ref={ref}
-      args={[56, 56, ICE_HEX, ICE_HEX]}
+      args={[72, 72, ICE_HEX, ICE_HEX]}
       position={[0, 0.02, 0]}
       onUpdate={(self) => {
         // Both materials in GridHelper: set transparent + opacity
@@ -610,12 +895,19 @@ function GridFloor() {
 }
 
 /* ── Full scene graph ────────────────────────────────────────────────────── */
-function SceneGraph({ onSelect, active }) {
+function SceneGraph({ onSelect, active, trace }) {
   const controlsRef = useRef();
+  const dofRef = useRef();
+  const [focus, setFocus] = useState(null);
+
+  // Clear the cinematic focus whenever the panel closes (return to overview).
+  useEffect(() => {
+    if (!active) setFocus(null);
+  }, [active]);
 
   return (
     <>
-      <fog attach="fog" args={[VOID, 60, 240]} />
+      <fog attach="fog" args={[VOID, 34, 165]} />
 
       {/* lights — essential for meshStandardMaterial surfaces */}
       <ambientLight intensity={0.6} />
@@ -624,23 +916,32 @@ function SceneGraph({ onSelect, active }) {
 
       <ReflectiveFloor />
       <GridFloor />
-      <Particles />
       <RadarRing />
-      <Core onSelect={onSelect} />
+      <Core onSelect={onSelect} onFocus={setFocus} />
 
       {NODES_CONFIG.map((cfg, i) => (
-        <ServiceNode key={cfg.name} config={cfg} index={i} onSelect={onSelect} />
+        <ServiceNode key={cfg.name} config={cfg} index={i} onSelect={onSelect} onFocus={setFocus} />
       ))}
 
       {RACK_CONFIGS.map(cfg => (
-        <Rack key={cfg.name} config={cfg} onSelect={onSelect} />
+        <Rack key={cfg.name} config={cfg} onSelect={onSelect} onFocus={setFocus} />
       ))}
 
-      <Database onSelect={onSelect} />
+      {/* decorative server-room density */}
+      {AMBIENT_RACKS.map((pos, i) => (
+        <AmbientRack key={`ar-${i}`} position={pos} />
+      ))}
+      {COOLING_TOWERS.map((pos, i) => (
+        <CoolingTower key={`ct-${i}`} position={pos} index={i} />
+      ))}
+
+      <Database onSelect={onSelect} onFocus={setFocus} />
       <EdgesAndPackets />
+      <Trace runId={trace} />
 
       <CameraRig />
-      <CameraFlyTo active={active} controlsRef={controlsRef} />
+      <CameraFlyTo active={active} focus={focus} controlsRef={controlsRef} />
+      <DofDriver dofRef={dofRef} focus={focus} />
 
       <OrbitControls
         ref={controlsRef}
@@ -649,13 +950,20 @@ function SceneGraph({ onSelect, active }) {
         autoRotate
         autoRotateSpeed={0.5}
         target={[0, 1.8, 0]}
-        minDistance={7}
-        maxDistance={40}
+        minDistance={4}
+        maxDistance={52}
         maxPolarAngle={Math.PI * 0.52}
         makeDefault
       />
 
       <EffectComposer>
+        <DepthOfField
+          ref={dofRef}
+          target={[0, 1.8, 0]}
+          focalLength={0.015}
+          focusRange={0.012}
+          bokehScale={0}
+        />
         <Bloom
           luminanceThreshold={0.34}
           luminanceSmoothing={0.85}
@@ -665,14 +973,13 @@ function SceneGraph({ onSelect, active }) {
         />
         <Vignette offset={0.3} darkness={0.65} />
         <Noise opacity={0.025} premultiply blendFunction={BlendFunction.SOFT_LIGHT} />
-        <ChromaticAberration offset={[0.0006, 0.0006]} />
       </EffectComposer>
     </>
   );
 }
 
 /* ── Canvas export ───────────────────────────────────────────────────────── */
-export default function SystemScene({ onSelect, active }) {
+export default function SystemScene({ onSelect, active, trace }) {
   return (
     <>
       {/* Node label styles — scoped via a style tag in the canvas wrapper */}
@@ -698,7 +1005,7 @@ export default function SystemScene({ onSelect, active }) {
       `}</style>
 
       <Canvas
-        camera={{ position: [0, 16, 26], fov: 52, near: 0.1, far: 240 }}
+        camera={{ position: [0, 18, 32], fov: 52, near: 0.1, far: 280 }}
         gl={{ antialias: true, alpha: false, toneMapping: THREE.NoToneMapping }}
         dpr={[1, 2]}
         style={{ background: VOID, cursor: 'grab' }}
@@ -706,7 +1013,7 @@ export default function SystemScene({ onSelect, active }) {
           gl.setClearColor(0x020202, 1);
         }}
       >
-        <SceneGraph onSelect={onSelect} active={active} />
+        <SceneGraph onSelect={onSelect} active={active} trace={trace} />
       </Canvas>
     </>
   );

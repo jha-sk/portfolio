@@ -1,5 +1,5 @@
 /*
- * Career OS content data — mission-log experience entries.
+ * Sourabh Jha portfolio content data — mission-log experience entries.
  */
 export const experience = [
   {

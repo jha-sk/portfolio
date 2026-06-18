@@ -1,5 +1,5 @@
 /*
- * Career OS content data — about bio paragraphs.
+ * Sourabh Jha portfolio content data — about bio paragraphs.
  */
 export const about = [
   'Backend & systems engineer at Accenture building and operating enterprise-scale platforms in Go, Java, and Python — REST and microservices, cloud and Kubernetes, and the observability that keeps them at 99.9% uptime.',

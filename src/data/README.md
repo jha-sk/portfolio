@@ -1,4 +1,4 @@
-# `src/data` — Career OS content architecture
+# `src/data` — Sourabh Jha portfolio content architecture
 
 All visitor-facing content reads from these editable, in-repo data files. No CMS,
 no network — Phases 2-6 import only the file they need, keeping diffs small and

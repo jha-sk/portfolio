@@ -5,7 +5,7 @@ import { ConsolePanel } from '@/components/ui/console-panel';
 import { Reveal } from '@/components/motion/reveal';
 
 /**
- * About — ~/about console panel (section #3 in Career OS IA).
+ * About — ~/about console panel (section #3 in Sourabh Jha portfolio IA).
  *
  * A ConsolePanel with traffic dots titled `~/about`. Inside: a mono prompt
  * flourish (`$ whoami`) followed by the `about` paragraphs in IBM Plex Sans

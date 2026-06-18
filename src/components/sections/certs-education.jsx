@@ -1,10 +1,11 @@
+import { Award, GraduationCap } from 'lucide-react';
 import { certifications } from '@/data/certifications';
 import { education } from '@/data/education';
 import { ConsolePanel } from '@/components/ui/console-panel';
 import { Reveal } from '@/components/motion/reveal';
 
 /**
- * CertsEducation — credentials panel pair (section #7 in Career OS IA).
+ * CertsEducation — credentials panel pair (section #7 in Sourabh Jha portfolio IA).
  *
  * Two paired ConsolePanels side-by-side on md+: certifications + education.
  * Wrapped in a single Reveal for scroll-triggered entrance.
@@ -22,11 +23,14 @@ export function CertsEducation() {
             <ConsolePanel title="~/certifications">
               <ul className="space-y-5" role="list">
                 {certifications.map((cert, i) => (
-                  <li key={i}>
-                    <p className="font-sans text-body text-fg">{cert.name}</p>
-                    <p className="font-mono text-label text-fg3 mt-1">
-                      {cert.issuer}
-                    </p>
+                  <li key={i} className="flex gap-3">
+                    <Award className="w-4 h-4 text-fg3 shrink-0 mt-1" aria-hidden="true" />
+                    <div>
+                      <p className="font-sans text-body text-fg">{cert.name}</p>
+                      <p className="font-mono text-label text-fg3 mt-1">
+                        {cert.issuer}
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -36,14 +40,17 @@ export function CertsEducation() {
             <ConsolePanel title="~/education">
               <ul className="space-y-5" role="list">
                 {education.map((edu, i) => (
-                  <li key={i}>
-                    <p className="font-sans text-body text-fg">{edu.degree}</p>
-                    <p className="font-sans text-body text-fg2 mt-0.5">
-                      {edu.school} · {edu.location}
-                    </p>
-                    <p className="font-mono text-label text-fg3 mt-1">
-                      {edu.detail}
-                    </p>
+                  <li key={i} className="flex gap-3">
+                    <GraduationCap className="w-4 h-4 text-fg3 shrink-0 mt-1" aria-hidden="true" />
+                    <div>
+                      <p className="font-sans text-body text-fg">{edu.degree}</p>
+                      <p className="font-sans text-body text-fg2 mt-0.5">
+                        {edu.school} · {edu.location}
+                      </p>
+                      <p className="font-mono text-label text-fg3 mt-1">
+                        {edu.detail}
+                      </p>
+                    </div>
                   </li>
                 ))}
               </ul>

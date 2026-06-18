@@ -2,8 +2,28 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom themed cursor — hide the native cursor everywhere while active
+   (set by CustomCursor on fine-pointer devices). !important beats the inline
+   cursor styles the 3D scene sets on <body>. */
+html.cursor-none,
+html.cursor-none * {
+  cursor: none !important;
+}
+
+/* Availability badge status dot */
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.82); }
+}
+.status-pulse {
+  animation: status-pulse 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-pulse { animation: none; }
+}
+
 /*
- * Career OS — dichromatic design-token source (dark-only).
+ * Sourabh Jha portfolio — dichromatic design-token source (dark-only).
  *
  * Palette: strictly two values — canvas #020202 and ice-blue #B2D5E5 in
  * opacity tiers. No second hue, no white. Components consume tokens only;

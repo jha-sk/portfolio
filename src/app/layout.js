@@ -2,6 +2,7 @@ import './globals.css';
 
 import { ibmPlexSans, jetBrainsMono } from '@/lib/fonts';
 import { cn } from '@/lib/utils';
+import { CustomCursor } from '@/components/system/custom-cursor';
 // Note: Dock is intentionally not rendered here — navigation is now the 3D HUD nav.
 // The dock component is preserved on disk at src/components/nav/dock.jsx for future reuse.
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }) {
         )}
       >
         <main>{children}</main>
+        <CustomCursor />
       </body>
     </html>
   );

@@ -1,7 +1,7 @@
 import { SystemHero } from '@/components/system/system-hero';
 
 /*
- * Home route — Career OS single-page layout.
+ * Home route — Sourabh Jha portfolio single-page layout.
  *
  * The 3D SystemHero is the entire page. Content sections (About, Skills,
  * Experience, Projects, CertsEducation, Contact) are now accessible via:

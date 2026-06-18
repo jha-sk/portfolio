@@ -1,12 +1,13 @@
 'use client';
 
+import { Briefcase, Building2, CalendarDays } from 'lucide-react';
 import { experience } from '@/data/experience';
 import { ConsolePanel } from '@/components/ui/console-panel';
 import { Chip } from '@/components/blueprint/chip';
 import { Reveal } from '@/components/motion/reveal';
 
 /**
- * Experience — changelog console panel (section #5 in Career OS IA).
+ * Experience — changelog console panel (section #5 in Sourabh Jha portfolio IA).
  *
  * A ConsolePanel titled `// changelog` containing the primary experience entry.
  * Layout:
@@ -31,14 +32,17 @@ export function Experience() {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-1 md:gap-4 mb-8">
               <div>
-                <p className="font-sans text-heading font-semibold text-fg leading-tight">
+                <p className="flex items-center gap-2 font-sans text-heading font-semibold text-fg leading-tight">
+                  <Briefcase className="w-5 h-5 text-fg3 shrink-0" aria-hidden="true" />
                   {entry.role}
                 </p>
-                <p className="font-mono text-label text-fg2 mt-1">
+                <p className="flex items-center gap-2 font-mono text-label text-fg2 mt-1">
+                  <Building2 className="w-3.5 h-3.5 text-fg3 shrink-0" aria-hidden="true" />
                   {entry.company}
                 </p>
               </div>
-              <p className="font-mono text-label text-fg3 md:text-right shrink-0">
+              <p className="flex items-center gap-1.5 font-mono text-label text-fg3 md:justify-end shrink-0">
+                <CalendarDays className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
                 {entry.period}
               </p>
             </div>

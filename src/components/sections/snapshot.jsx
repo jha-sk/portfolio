@@ -4,7 +4,7 @@ import { stats } from '@/data/stats';
 import { RevealGroup, RevealItem } from '@/components/motion/reveal';
 
 /**
- * Snapshot — telemetry stat strip (section #2 in Career OS IA).
+ * Snapshot — telemetry stat strip (section #2 in Sourabh Jha portfolio IA).
  *
  * Renders the `stats` array as a responsive grid of bordered stat cells.
  * Each cell shows the value (large, glowing, IBM Plex Sans) above the label
@@ -16,7 +16,7 @@ import { RevealGroup, RevealItem } from '@/components/motion/reveal';
  */
 export function Snapshot() {
   return (
-    <section id="snapshot" aria-label="Career telemetry snapshot">
+    <section id="snapshot" aria-label="Portfolio telemetry snapshot">
       <div className="mx-auto w-full max-w-content px-4 md:px-6 lg:px-8 py-16 md:py-20">
         {/* Section kicker */}
         <p className="font-mono text-label uppercase tracking-[0.18em] text-fg3 mb-6">

@@ -1,5 +1,5 @@
 /*
- * Career OS content data — technology skills by category.
+ * Sourabh Jha portfolio content data — technology skills by category.
  */
 export const skills = [
   {

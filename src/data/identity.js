@@ -1,5 +1,5 @@
 /*
- * Career OS content data — identity.
+ * Sourabh Jha portfolio content data — identity.
  */
 export const identity = {
   name: 'Sourabh Jha',

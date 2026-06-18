@@ -1,17 +1,29 @@
 import { cn } from '@/lib/utils';
 
 /**
- * ConsolePanel — the universal window frame for every Career OS section.
+ * ConsolePanel — Mac/Ghostty-style terminal window frame for every section.
  *
- * A server component (no hooks). Renders:
- *   - An outer wrapper with border, background, and panel shadow
- *   - A title bar: optional macOS traffic dots + mono uppercase label
- *   - A body with scanline overlay + children
+ * Server component (no hooks). Renders:
+ *   - A rounded, frosted-glass window (backdrop blur + saturate, ice border,
+ *     soft drop shadow + inner top highlight) — sits over the 3D scene / panel.
+ *   - A title bar with glossy traffic-light dots (left) + a centered title.
+ *   - A body with a faint scanline overlay + children.
  *
- * Token contract: all styling via Tailwind utility classes and CSS vars.
- * The only raw value here is the inner-glow rgba — explicitly allowed by the
- * design contract as it derives directly from var(--fg).
+ * Dichromatic: traffic dots are three ice-blue shades (no off-palette hues);
+ * the only raw values are glass rgba + a white specular highlight on the dots,
+ * both standard glassmorphism, derived from var(--fg).
  */
+
+const GLASS = {
+  background: 'rgba(12,20,26,0.55)',
+  backdropFilter: 'blur(26px) saturate(150%)',
+  WebkitBackdropFilter: 'blur(26px) saturate(150%)',
+};
+
+// Ice-toned "traffic lights" (light → mid → deep) — keeps the mac arrangement
+// while staying strictly dichromatic.
+const DOT_COLORS = ['#cfe7f2', '#9fd8ea', '#6fa9be'];
+
 export function ConsolePanel({
   title,
   dots = false,
@@ -21,30 +33,65 @@ export function ConsolePanel({
 }) {
   return (
     <div
-      className={cn(
-        'overflow-hidden rounded-lg border border-line bg-background shadow-panel',
-        className,
-      )}
+      className={cn('overflow-hidden', className)}
+      style={{
+        ...GLASS,
+        borderRadius: '16px',
+        border: '1px solid rgba(178,213,229,0.16)',
+        boxShadow:
+          '0 24px 70px rgba(0,0,0,0.55), 0 0 0 1px rgba(178,213,229,0.03), inset 0 1px 0 rgba(178,213,229,0.12)',
+      }}
     >
       {/* Title bar */}
-      <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+      <div
+        className="relative flex items-center gap-2 px-4"
+        style={{
+          height: '42px',
+          borderBottom: '1px solid rgba(178,213,229,0.10)',
+          background:
+            'linear-gradient(180deg, rgba(178,213,229,0.06), rgba(178,213,229,0.012))',
+        }}
+      >
         {dots && (
-          <>
-            <span className="h-2.5 w-2.5 rounded-full border border-line-strong" />
-            <span className="h-2.5 w-2.5 rounded-full border border-line-strong" />
-            <span className="h-2.5 w-2.5 rounded-full border border-line-strong" />
-          </>
+          <div className="flex items-center gap-2">
+            {DOT_COLORS.map((c, i) => (
+              <span
+                key={i}
+                aria-hidden="true"
+                style={{
+                  height: 12,
+                  width: 12,
+                  borderRadius: '9999px',
+                  background: `radial-gradient(circle at 32% 28%, rgba(255,255,255,0.6), ${c} 62%)`,
+                  boxShadow: `inset 0 0 0 0.5px rgba(0,0,0,0.25), 0 0 6px ${c}55`,
+                }}
+              />
+            ))}
+          </div>
         )}
-        <span className="font-mono text-label uppercase tracking-[0.18em] text-fg3">
-          {title}
-        </span>
+
+        {/* Centered window title (mac style) */}
+        {title && (
+          <span
+            className="font-mono"
+            style={{
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              fontSize: '11px',
+              letterSpacing: '0.12em',
+              color: 'rgba(178,213,229,0.6)',
+              whiteSpace: 'nowrap',
+              pointerEvents: 'none',
+            }}
+          >
+            {title}
+          </span>
+        )}
       </div>
 
       {/* Body */}
-      <div
-        className={cn('relative p-6 md:p-8', bodyClassName)}
-        style={{ boxShadow: 'inset 0 1px 0 rgba(178,213,229,0.06)' }}
-      >
+      <div className={cn('relative p-6 md:p-8', bodyClassName)}>
         {/* Scanline texture overlay */}
         <span
           aria-hidden="true"

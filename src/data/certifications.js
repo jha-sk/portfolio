@@ -1,5 +1,5 @@
 /*
- * Career OS content data — certifications.
+ * Sourabh Jha portfolio content data — certifications.
  */
 export const certifications = [
   {

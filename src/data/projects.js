@@ -1,5 +1,5 @@
 /*
- * Career OS content data — project capsules.
+ * Sourabh Jha portfolio content data — project capsules.
  */
 export const projects = [
   {

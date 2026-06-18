@@ -1,18 +1,19 @@
 'use client';
 
 /**
- * SectionPanel — glass drawer overlay for 3D click-to-navigate.
+ * SectionPanel — genie/pop-out card overlay for 3D click-to-navigate.
  *
- * Renders the existing section components inside a right-side glass panel.
- * Opened by clicking 3D objects or the HUD nav buttons.
- * Closed via backdrop click, Esc key, or the X button.
+ * Instead of a side drawer, the section content scales out (genie effect) from
+ * the exact point the user clicked — the 3D node, dock button, or palette item.
+ * The trick: the card is centered in the viewport, and its transform-origin is
+ * set to the click point via `calc(50% + clickX - 50vw)`, so a scale 0→1 makes
+ * it emanate from there.
  *
- * Progressive enhancement: this component only mounts on the client (inside
- * CanvasOrFallback which is in a 'use client' component). No-JS/SSR paths
- * continue to render sections inline in SystemFallback.
+ * Closed via backdrop click, Esc key, or the X button. Reduced-motion falls
+ * back to a plain fade. Client-only (mounted inside CanvasOrFallback).
  */
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
 
@@ -59,6 +60,30 @@ export function SectionPanel({ active, onClose }) {
   const prefersReducedMotion = useReducedMotion();
   const isOpen = Boolean(active);
 
+  // Track the most recent pointer-down position — the genie origin.
+  const originRef = useRef(null);
+  const [origin, setOrigin] = useState(null);
+
+  useEffect(() => {
+    const onDown = (e) => {
+      originRef.current = { x: e.clientX, y: e.clientY };
+    };
+    window.addEventListener('pointerdown', onDown, true);
+    return () => window.removeEventListener('pointerdown', onDown, true);
+  }, []);
+
+  // Snapshot the origin when the panel opens (default: viewport center).
+  useEffect(() => {
+    if (isOpen) {
+      setOrigin(
+        originRef.current ?? {
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+        }
+      );
+    }
+  }, [isOpen]);
+
   /* Esc key closes */
   const handleKeyDown = useCallback(
     (e) => {
@@ -74,28 +99,29 @@ export function SectionPanel({ active, onClose }) {
 
   /* Lock body scroll when panel is open */
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => {
       document.body.style.overflow = '';
     };
   }, [isOpen]);
 
-  const panelVariants = prefersReducedMotion
-    ? { open: { x: 0 }, closed: { x: '100%' } }
-    : {
-        open:   { x: 0,      transition: { type: 'spring', stiffness: 340, damping: 36 } },
-        closed: { x: '100%', transition: { type: 'spring', stiffness: 340, damping: 36 } },
-      };
+  // transform-origin = click point, expressed relative to the centered card.
+  const transformOrigin = origin
+    ? `calc(50% + ${origin.x}px - 50vw) calc(50% + ${origin.y}px - 50vh)`
+    : '50% 50%';
 
-  const backdropVariants = prefersReducedMotion
-    ? { open: { opacity: 1 }, closed: { opacity: 0 } }
+  const cardMotion = prefersReducedMotion
+    ? {
+        initial: { opacity: 0 },
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0.18 },
+      }
     : {
-        open:   { opacity: 1, transition: { duration: 0.22 } },
-        closed: { opacity: 0, transition: { duration: 0.18 } },
+        initial: { opacity: 0, scale: 0.06 },
+        animate: { opacity: 1, scale: 1 },
+        exit: { opacity: 0, scale: 0.04 },
+        transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
       };
 
   return (
@@ -105,10 +131,10 @@ export function SectionPanel({ active, onClose }) {
           {/* Dimmed backdrop */}
           <motion.div
             key="backdrop"
-            initial="closed"
-            animate="open"
-            exit="closed"
-            variants={backdropVariants}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22 }}
             onClick={onClose}
             aria-hidden="true"
             style={{
@@ -116,114 +142,135 @@ export function SectionPanel({ active, onClose }) {
               inset: 0,
               zIndex: 40,
               background: 'rgba(2,2,2,0.72)',
+              backdropFilter: 'blur(2px)',
+              WebkitBackdropFilter: 'blur(2px)',
               cursor: 'pointer',
             }}
           />
 
-          {/* Glass panel */}
-          <motion.aside
-            key="panel"
-            role="dialog"
-            aria-modal="true"
-            aria-label={SECTION_TITLES[active] ?? 'Section panel'}
-            initial="closed"
-            animate="open"
-            exit="closed"
-            variants={panelVariants}
+          {/* Centering layer — card emanates from the click point */}
+          <div
             style={{
               position: 'fixed',
-              right: 0,
-              top: 0,
-              height: '100%',
-              width: '100%',
-              maxWidth: '680px',
+              inset: 0,
               zIndex: 50,
               display: 'flex',
-              flexDirection: 'column',
-              background: 'rgba(2,2,2,0.92)',
-              borderLeft: '1px solid rgba(178,213,229,0.14)',
-              boxShadow: '0 0 80px rgba(178,213,229,0.07), -4px 0 32px rgba(0,0,0,0.8)',
-              overflowY: 'auto',
-              overscrollBehavior: 'contain',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+              pointerEvents: 'none',
             }}
           >
-            {/* Scanlines texture overlay */}
-            <div
-              aria-hidden="true"
+            <motion.aside
+              key="panel"
+              role="dialog"
+              aria-modal="true"
+              aria-label={SECTION_TITLES[active] ?? 'Section panel'}
+              {...cardMotion}
               style={{
-                position: 'absolute',
-                inset: 0,
-                pointerEvents: 'none',
-                backgroundImage:
-                  'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(178,213,229,0.015) 2px, rgba(178,213,229,0.015) 4px)',
-                zIndex: 0,
-              }}
-            />
-
-            {/* Panel header */}
-            <div
-              style={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 10,
+                transformOrigin,
+                pointerEvents: 'auto',
+                width: '100%',
+                maxWidth: '720px',
+                maxHeight: '86vh',
                 display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '16px 20px',
-                borderBottom: '1px solid rgba(178,213,229,0.1)',
-                background: 'rgba(2,2,2,0.95)',
-                backdropFilter: 'blur(12px)',
+                flexDirection: 'column',
+                borderRadius: '18px',
+                overflow: 'hidden',
+                background: 'rgba(8,14,18,0.62)',
+                backdropFilter: 'blur(30px) saturate(150%)',
+                WebkitBackdropFilter: 'blur(30px) saturate(150%)',
+                border: '1px solid rgba(178,213,229,0.18)',
+                boxShadow:
+                  '0 40px 120px rgba(0,0,0,0.7), 0 0 0 1px rgba(178,213,229,0.04), inset 0 1px 0 rgba(178,213,229,0.12)',
               }}
             >
-              <span
+              {/* Scanlines texture overlay */}
+              <div
+                aria-hidden="true"
                 style={{
-                  fontFamily: 'var(--font-jetbrains-mono, monospace)',
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: 'rgba(178,213,229,0.7)',
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'none',
+                  backgroundImage:
+                    'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(178,213,229,0.015) 2px, rgba(178,213,229,0.015) 4px)',
+                  zIndex: 0,
                 }}
-              >
-                career-os://{SECTION_TITLES[active]?.toLowerCase() ?? active}
-              </span>
+              />
 
-              <button
-                onClick={onClose}
-                aria-label="Close panel"
+              {/* Header */}
+              <div
                 style={{
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 10,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(178,213,229,0.15)',
-                  background: 'transparent',
-                  color: 'rgba(178,213,229,0.6)',
-                  cursor: 'pointer',
-                  transition: 'color 0.15s, border-color 0.15s, background 0.15s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#eaf6fb';
-                  e.currentTarget.style.borderColor = 'rgba(178,213,229,0.45)';
-                  e.currentTarget.style.background = 'rgba(178,213,229,0.06)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = 'rgba(178,213,229,0.6)';
-                  e.currentTarget.style.borderColor = 'rgba(178,213,229,0.15)';
-                  e.currentTarget.style.background = 'transparent';
+                  justifyContent: 'space-between',
+                  padding: '16px 20px',
+                  borderBottom: '1px solid rgba(178,213,229,0.12)',
+                  background:
+                    'linear-gradient(180deg, rgba(178,213,229,0.05), rgba(178,213,229,0.01))',
                 }}
               >
-                <X size={15} strokeWidth={1.8} />
-              </button>
-            </div>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-jetbrains-mono, monospace)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    color: 'rgba(178,213,229,0.7)',
+                  }}
+                >
+                  sourabh-jha://{SECTION_TITLES[active]?.toLowerCase() ?? active}
+                </span>
 
-            {/* Panel content */}
-            <div style={{ position: 'relative', zIndex: 1, flex: 1 }}>
-              <SectionBody active={active} />
-            </div>
-          </motion.aside>
+                <button
+                  onClick={onClose}
+                  aria-label="Close panel"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(178,213,229,0.15)',
+                    background: 'transparent',
+                    color: 'rgba(178,213,229,0.6)',
+                    cursor: 'pointer',
+                    transition: 'color 0.15s, border-color 0.15s, background 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = '#eaf6fb';
+                    e.currentTarget.style.borderColor = 'rgba(178,213,229,0.45)';
+                    e.currentTarget.style.background = 'rgba(178,213,229,0.06)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = 'rgba(178,213,229,0.6)';
+                    e.currentTarget.style.borderColor = 'rgba(178,213,229,0.15)';
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <X size={15} strokeWidth={1.8} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div
+                style={{
+                  position: 'relative',
+                  zIndex: 1,
+                  flex: 1,
+                  overflowY: 'auto',
+                  overscrollBehavior: 'contain',
+                }}
+              >
+                <SectionBody active={active} />
+              </div>
+            </motion.aside>
+          </div>
         </>
       )}
     </AnimatePresence>

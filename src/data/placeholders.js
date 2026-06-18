@@ -1,5 +1,5 @@
 /*
- * Career OS content data — the single greppable placeholder convention (D-03).
+ * Sourabh Jha portfolio content data — the single greppable placeholder convention (D-03).
  *
  * One marker, one token. Every value in src/data/*.js that is not yet a known
  * fact is produced by TODO(label) and detected by isPlaceholder(value).
