@@ -26,3 +26,10 @@ yarn-error.log*
 # vercel
 .vercel
 .superpowers/
+
+# claude skills
+.claude/
+
+# markdown (keep README)
+*.md
+!README.md
