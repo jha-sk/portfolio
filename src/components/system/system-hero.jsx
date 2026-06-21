@@ -54,8 +54,8 @@ const GLASS = {
 function HudIdentity() {
   return (
     <div
-      className="max-w-[min(72vw,380px)] shrink-0 text-left"
-      style={{ ...GLASS, borderRadius: '16px', padding: '14px 18px', pointerEvents: 'none' }}
+      className="max-w-[min(60vw,380px)] shrink-0 text-left md:max-w-[min(72vw,380px)]"
+      style={{ ...GLASS, borderRadius: '16px', padding: '12px 14px', pointerEvents: 'none' }}
     >
       {/* SEO-critical: name + title in real DOM */}
       <h1
@@ -125,7 +125,7 @@ const QUALITY_OPTIONS = [
 function HudQuality({ quality, onSetQuality }) {
   return (
     <div
-      className="flex shrink-0 items-center gap-0.5 self-start"
+      className="ml-auto flex shrink-0 items-center gap-0.5 self-start md:ml-0"
       style={{ ...GLASS, borderRadius: '9999px', padding: '4px 5px', pointerEvents: 'auto' }}
       role="group"
       aria-label="Render quality"
@@ -163,7 +163,7 @@ function HudQuality({ quality, onSetQuality }) {
 function HudControls({ onOpenPalette, onToggleTour, tourActive, tourStep, tourTotal }) {
   return (
     <div
-      className="flex shrink-0 items-center gap-1 self-start"
+      className="hidden shrink-0 items-center gap-1 self-start md:flex"
       style={{ ...GLASS, borderRadius: '9999px', padding: '5px 6px', pointerEvents: 'auto' }}
     >
       <button
@@ -231,8 +231,8 @@ function HudDock({ active, onSelect }) {
       style={{ pointerEvents: 'auto', maxWidth: '94vw' }}
     >
       <ul
-        className="flex flex-wrap items-center justify-center gap-1"
-        style={{ listStyle: 'none', margin: 0, padding: '7px 8px', borderRadius: '9999px', ...GLASS }}
+        className="flex flex-nowrap items-center justify-start gap-1 overflow-x-auto md:flex-wrap md:justify-center md:overflow-visible"
+        style={{ listStyle: 'none', margin: 0, padding: '7px 8px', borderRadius: '9999px', scrollbarWidth: 'none', ...GLASS }}
       >
         {NAV_SECTIONS.map(({ id, label }) => {
           const isActive = active === id;

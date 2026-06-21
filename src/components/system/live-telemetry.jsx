@@ -210,7 +210,7 @@ export function LiveTelemetry() {
   /* ── Render ──────────────────────────────────────────────────────────── */
   return (
     <div
-      className="flex shrink-0 items-center justify-end"
+      className="hidden shrink-0 items-center justify-end md:flex"
       style={{
         marginLeft: 'auto',
         whiteSpace: 'nowrap',
