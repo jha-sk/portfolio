@@ -115,6 +115,51 @@ const PILL_BTN = {
   letterSpacing: '0.14em', textTransform: 'uppercase', transition: 'background .15s, color .15s',
 };
 
+/* ── Quality chip (Low / Auto / High) ────────────────────────────────────── */
+const QUALITY_OPTIONS = [
+  { id: 'low',  label: 'Low'  },
+  { id: 'auto', label: 'Auto' },
+  { id: 'high', label: 'High' },
+];
+
+function HudQuality({ quality, onSetQuality }) {
+  return (
+    <div
+      className="flex shrink-0 items-center gap-0.5 self-start"
+      style={{ ...GLASS, borderRadius: '9999px', padding: '4px 5px', pointerEvents: 'auto' }}
+      role="group"
+      aria-label="Render quality"
+      title="Render quality — lower this if the scene feels slow"
+    >
+      <span
+        aria-hidden="true"
+        className="px-1.5 font-mono uppercase"
+        style={{ fontSize: 9, letterSpacing: '0.14em', color: 'rgba(178,213,229,0.5)' }}
+      >
+        gfx
+      </span>
+      {QUALITY_OPTIONS.map(({ id, label }) => {
+        const isActive = quality === id;
+        return (
+          <button
+            key={id}
+            onClick={() => onSetQuality(id)}
+            aria-pressed={isActive}
+            style={{
+              ...PILL_BTN,
+              padding: '4px 9px',
+              background: isActive ? 'rgba(178,213,229,0.16)' : 'transparent',
+              color: isActive ? '#eaf6fb' : PILL_BTN.color,
+            }}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function HudControls({ onOpenPalette, onToggleTour, tourActive, tourStep, tourTotal }) {
   return (
     <div
@@ -480,6 +525,7 @@ export function SystemHero() {
           tourStep={tourActive ? tourStep : 0}
           tourTotal={TOUR_SEQUENCE.length}
         />
+        <HudQuality quality={quality} onSetQuality={setQuality} />
         <LiveTelemetry />
       </div>
       <TourCaption active={tourActive} section={tourSection} />
@@ -495,6 +541,7 @@ export function SystemHero() {
         onTrace={fireTrace}
         onTour={startTour}
         onTerminal={() => { setPaletteOpen(false); setTerminalOpen(true); }}
+        onSetQuality={setQuality}
       />
 
       <CommandTerminal

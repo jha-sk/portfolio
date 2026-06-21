@@ -15,7 +15,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Compass, Boxes, FolderGit2, Briefcase, Send,
-  Activity, Download, Copy, Github, Linkedin, Check, Play, TerminalSquare,
+  Activity, Download, Copy, Github, Linkedin, Check, Play, TerminalSquare, Gauge,
 } from 'lucide-react';
 import { links } from '@/data/links';
 
@@ -27,7 +27,7 @@ const GLASS = {
   boxShadow: '0 24px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(178,213,229,0.10)',
 };
 
-export function CommandPalette({ open, onClose, onSelect, onTrace, onTour, onTerminal }) {
+export function CommandPalette({ open, onClose, onSelect, onTrace, onTour, onTerminal, onSetQuality }) {
   const [query, setQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const [copied, setCopied] = useState(false);
@@ -47,11 +47,14 @@ export function CommandPalette({ open, onClose, onSelect, onTrace, onTour, onTer
     { id: 'terminal',   group: 'System',   label: 'Open terminal',     Icon: TerminalSquare, run: () => onTerminal?.() },
     { id: 'tour',       group: 'System',   label: 'Play guided tour',  Icon: Play,       run: () => onTour?.() },
     { id: 'trace',      group: 'System',   label: 'Trace a request',   Icon: Activity,   run: () => onTrace?.(), keepOpen: false },
+    { id: 'q-auto', group: 'Quality', label: 'Quality: Auto (detect)', Icon: Gauge, run: () => onSetQuality?.('auto') },
+    { id: 'q-high', group: 'Quality', label: 'Quality: High (full 3D)', Icon: Gauge, run: () => onSetQuality?.('high') },
+    { id: 'q-low',  group: 'Quality', label: 'Quality: Low (static)',   Icon: Gauge, run: () => onSetQuality?.('low') },
     { id: 'resume',     group: 'System',   label: 'Download résumé',   Icon: Download,   run: () => { const a = document.createElement('a'); a.href = links.resume; a.download = ''; a.click(); } },
     { id: 'email',      group: 'Contact',  label: 'Copy email',        Icon: Copy,       run: () => { navigator.clipboard?.writeText(links.email); }, copy: true },
     { id: 'github',     group: 'Contact',  label: 'Open GitHub',       Icon: Github,     run: () => window.open(links.github, '_blank', 'noopener') },
     { id: 'linkedin',   group: 'Contact',  label: 'Open LinkedIn',     Icon: Linkedin,   run: () => window.open(links.linkedin, '_blank', 'noopener') },
-  ], [onSelect, onTrace, onTour, onTerminal]);
+  ], [onSelect, onTrace, onTour, onTerminal, onSetQuality]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
