@@ -51,6 +51,7 @@ export function SystemFallback() {
     <>
       {/* Cheap, GPU-light motion — disabled under reduced-motion via media query. */}
       <style>{`
+        html { scroll-padding-top: 64px; }
         @keyframes fb-node-pulse {
           0%, 100% { opacity: 0.55; }
           50%      { opacity: 1; }
