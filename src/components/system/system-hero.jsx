@@ -54,7 +54,7 @@ const GLASS = {
 function HudIdentity() {
   return (
     <div
-      className="max-w-[min(60vw,380px)] shrink-0 text-left md:max-w-[min(72vw,380px)]"
+      className="min-w-0 max-w-[min(62vw,380px)] text-left md:max-w-[min(72vw,380px)] md:shrink-0"
       style={{ ...GLASS, borderRadius: '16px', padding: '12px 14px', pointerEvents: 'none' }}
     >
       {/* SEO-critical: name + title in real DOM */}
@@ -71,7 +71,7 @@ function HudIdentity() {
         {identity.name}
       </h1>
 
-      <p className="mt-1.5 font-mono text-[11px] tracking-[0.06em]" style={{ color: 'rgba(178,213,229,0.6)' }}>
+      <p className="mt-1.5 hidden font-mono text-[11px] tracking-[0.06em] md:block" style={{ color: 'rgba(178,213,229,0.6)' }}>
         {identity.title}
       </p>
 
@@ -538,7 +538,7 @@ export function SystemHero() {
 
       {/* Top HUD bar — identity · controls · telemetry. Wraps gracefully:
           telemetry stays one line and drops to its own row before anything overlaps. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start gap-3 p-4 md:p-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-nowrap items-start gap-2 p-4 md:flex-wrap md:gap-3 md:p-6">
         <HudIdentity />
         <HudControls
           onOpenPalette={() => setPaletteOpen(true)}
