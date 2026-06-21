@@ -1,37 +1,82 @@
-# Sourabh Jha — Portfolio
+<div align="center">
 
-> A futuristic, interactive **3D "operating-system"** portfolio for an AI / Backend engineer — you don't scroll a résumé, you explore a live system topology.
+<br />
 
-The landing page is a real-time **WebGL system map**: a glowing identity core wired to orbiting service nodes, server racks, and a database, with data packets streaming between them. Clicking any object flies the camera in cinematically and pops the matching section open with a genie effect. There's a working **terminal**, a **⌘K command palette**, a **guided tour**, live **GitHub stats**, and a contact form that actually delivers — all wrapped in a strictly dichromatic, glassmorphic dark theme.
+# `CAREER · OS`
+
+### Sourabh Jha — AI / Backend Engineer
+
+*You don't scroll a résumé. You explore a live system.*
+
+<br />
+
+A futuristic, interactive **3D operating-system portfolio**. The landing page is a real-time **WebGL system map** — a glowing identity core wired to orbiting service nodes, server racks, and a database, with data packets streaming between them. Click any object and the camera flies in cinematically, popping the matching section open with a genie effect.
+
+<br />
+
+![Next.js](https://img.shields.io/badge/Next.js_15-020202?style=for-the-badge&logo=next.js&logoColor=B2D5E5)
+![React](https://img.shields.io/badge/React_19-020202?style=for-the-badge&logo=react&logoColor=B2D5E5)
+![Three.js](https://img.shields.io/badge/React_Three_Fiber-020202?style=for-the-badge&logo=three.js&logoColor=B2D5E5)
+![Tailwind](https://img.shields.io/badge/Tailwind_CSS-020202?style=for-the-badge&logo=tailwindcss&logoColor=B2D5E5)
+![Framer](https://img.shields.io/badge/Framer_Motion-020202?style=for-the-badge&logo=framer&logoColor=B2D5E5)
+![Vercel](https://img.shields.io/badge/Vercel-020202?style=for-the-badge&logo=vercel&logoColor=B2D5E5)
+
+<br />
+
+**[Features](#-features) · [Tech Stack](#-tech-stack) · [Quick Start](#-quick-start) · [Configuration](#-configuration) · [Structure](#-project-structure) · [Customizing](#-customizing-content) · [Deploy](#-deployment)**
+
+</div>
+
+<br />
 
 ---
 
 ## ✨ Features
 
-**The 3D world**
-- **Live system topology** (React Three Fiber) — identity core, 6 service nodes, 4 interactive racks, a Postgres node, plus ambient racks and cooling towers framing a server hall.
+<table>
+<tr>
+<td width="50%" valign="top">
+
+#### 🌐 The 3D World
+- **Live system topology** (React Three Fiber) — identity core, 6 service nodes, 4 interactive racks, a Postgres node, plus ambient racks and cooling towers.
 - **Flowing data** — packets travel a fully-connected mesh; nodes **pulse** when a packet arrives, so the flow looks causal.
-- **Cinematic navigation** — click a node / dock button / palette item to dolly the camera onto it; closing flies back to the overview.
-- **Atmosphere** — reflective floor, bloom, vignette, grain, spinning cooling-fan blades, flickering rack LEDs.
+- **Cinematic navigation** — click a node, dock button, or palette item to dolly the camera in; closing flies back to overview.
+- **Atmosphere** — reflective floor, bloom, vignette, grain, spinning cooling fans, flickering rack LEDs.
 
-**Interaction & wayfinding**
-- **Custom cursor** — a "target-lock" selection reticle that scans while idle and snaps onto interactive elements (with a contextual `▸ open / type / select` HUD label).
-- **⌘K / Ctrl+K command palette** — jump to any section, run the trace, download the résumé, copy email, open socials.
-- **Terminal** (`` ` `` backtick) — a real shell: `whoami`, `about`, `skills`, `projects`, `open <section>`, `resume`, `sudo hire-me`, with command history.
-- **Guided tour** — a hands-free autopilot that visits each section with captions (great for passive viewers).
+</td>
+<td width="50%" valign="top">
+
+#### 🎯 Interaction & Wayfinding
+- **Custom cursor** — a "target-lock" reticle that scans while idle and snaps onto interactive elements with a `▸ open / type / select` HUD label.
+- **⌘K command palette** — jump to any section, run the trace, download the résumé, copy email, open socials.
+- **Terminal** (`` ` ``) — a real shell: `whoami`, `skills`, `projects`, `open <section>`, `sudo hire-me`, with history.
+- **Guided tour** — a hands-free autopilot that visits each section with captions.
+
+</td>
+</tr>
+<tr>
+<td width="50%" valign="top">
+
+#### 🪪 Content & Credibility
+- **Genie pop-out panels** — section content emanates from the click point in a frosted terminal window.
+- **Live GitHub stats** — real repo / follower counts and top-starred repos, fetched client-side and cached.
 - **Trace a request** — fires a bright packet through the full `client → core → db` path.
-- **URL deep-linking** — `/#projects` opens that section on load; back/forward supported.
-
-**Content & credibility**
-- **Genie pop-out panels** — section content (About, Skills, Projects, Experience, Contact) emanates from the click point in a frosted terminal window.
-- **Live GitHub stats** — real repo/follower counts + top-starred repos, fetched client-side and cached.
-- **Availability badge**, animated **live telemetry** HUD, **cold-start boot loader**.
 - **Working contact form** — delivers via [Resend](https://resend.com) with a branded auto-reply (opt-in).
 
-**Quality**
+</td>
+<td width="50%" valign="top">
+
+#### ⚡ Quality & Resilience
 - **Progressive enhancement** — full content renders in a static `SystemFallback` for SSR / SEO / no-JS.
-- **Mobile & reduced-motion** — phones and `prefers-reduced-motion` users get the lightweight static experience (no WebGL).
+- **Mobile & reduced-motion** — phones and `prefers-reduced-motion` users get the lightweight static experience.
 - **FPS-adaptive** — `PerformanceMonitor` + `AdaptiveDpr` scale resolution and drop heavy post-FX on weaker GPUs.
+- **Deep-linking** — `/#projects` opens that section on load; back/forward supported.
+
+</td>
+</tr>
+</table>
+
+<br />
 
 ---
 
@@ -39,43 +84,53 @@ The landing page is a real-time **WebGL system map**: a glowing identity core wi
 
 | Area | Choice |
 | --- | --- |
-| Framework | **Next.js 15** (App Router) |
-| Language | **JavaScript / JSX** (no TypeScript) |
-| UI runtime | **React 19** |
-| 3D | **React Three Fiber**, **drei**, **@react-three/postprocessing**, **three** |
-| Styling | **Tailwind CSS** + CSS design tokens (shadcn-style) |
-| Motion | **Framer Motion** + CSS keyframes |
-| Icons | **lucide-react** |
-| Email | **Resend** (API route) |
-| Deploy | **Vercel** |
+| **Framework** | Next.js 15 (App Router) |
+| **Language** | JavaScript / JSX — *no TypeScript* |
+| **UI runtime** | React 19 |
+| **3D** | React Three Fiber · drei · @react-three/postprocessing · three |
+| **Styling** | Tailwind CSS + CSS design tokens (shadcn-style) |
+| **Motion** | Framer Motion + CSS keyframes |
+| **Icons** | lucide-react |
+| **Email** | Resend (API route) |
+| **Deploy** | Vercel |
 
-**Design language:** strictly dichromatic — canvas `#020202` + ice-blue `#B2D5E5` (opacity tiers). Type pairs **IBM Plex Sans** (display/body) with **JetBrains Mono** (system voice). Apple-Vision-Pro-leaning glassmorphism, no neon.
+> [!NOTE]
+> **Design language** — strictly dichromatic: canvas `#020202` + ice-blue `#B2D5E5` (opacity tiers). Type pairs **IBM Plex Sans** (display / body) with **JetBrains Mono** (system voice). Apple-Vision-Pro-leaning glassmorphism. No neon.
+
+<br />
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
 ```bash
-# 1. Install dependencies
+# 1 · Install dependencies
 npm install
 
-# 2. Run the dev server
+# 2 · Run the dev server  →  http://localhost:3000
 npm run dev
-# → http://localhost:3000
 
-# 3. Production build
-npm run build
-npm run start
+# 3 · Production build
+npm run build && npm run start
 ```
 
+> [!IMPORTANT]
 > Requires **Node.js 18.18+** (Next.js 15).
 
-### Tip
-The cold-start loader is held for a minimum duration so its boot sequence always plays — tune `MIN_LOADER_MS` in `src/components/system/system-hero.jsx`.
+<details>
+<summary><b>💡 Tip — tuning the boot loader</b></summary>
+
+<br />
+
+The cold-start loader is held for a minimum duration so its boot sequence always plays. Tune `MIN_LOADER_MS` in [`src/components/system/system-hero.jsx`](src/components/system/system-hero.jsx).
+
+</details>
+
+<br />
 
 ---
 
-## 🔑 Environment Variables
+## 🔑 Configuration
 
 The contact form sends through Resend. Create `.env.local` (gitignored):
 
@@ -91,12 +146,15 @@ RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxxxxxx
 # CONTACT_TO=you@example.com
 ```
 
-**Behaviour:**
-- No `RESEND_API_KEY` → the API returns "not configured"; the form shows an error with a `mailto:` fallback.
-- **Test mode** (no verified domain) → Resend only delivers to the email tied to your Resend account.
-- The recruiter **auto-reply** stays dormant until `RESEND_FROM` is set (i.e. a domain is verified), then activates automatically.
+| Condition | Behaviour |
+| --- | --- |
+| No `RESEND_API_KEY` | API returns *"not configured"*; form shows an error with a `mailto:` fallback. |
+| **Test mode** (no verified domain) | Resend only delivers to the email tied to your Resend account. |
+| `RESEND_FROM` unset | The recruiter **auto-reply** stays dormant until a domain is verified, then activates automatically. |
 
-On Vercel, add the same variables under **Project → Settings → Environment Variables**.
+> On Vercel, add the same variables under **Project → Settings → Environment Variables**.
+
+<br />
 
 ---
 
@@ -131,20 +189,26 @@ src/
 └── lib/                       # fonts, utils
 ```
 
+<br />
+
 ---
 
-## ✏️ Customizing the content
+## ✏️ Customizing Content
 
-All copy lives in `src/data/` — edit these and the whole site (3D labels, panels, terminal, emails) updates from one place:
+All copy lives in `src/data/` — edit these and the whole site (3D labels, panels, terminal, emails) updates from **one place**:
 
-- **`identity.js`** — name, title, tagline
-- **`links.js`** — email, phone, GitHub, LinkedIn, résumé path
-- **`about.js` / `skills.js` / `experience.js` / `projects.js`** — section content
-- **`stats.js`** — the telemetry HUD metrics
-- **`certifications.js` / `education.js`** — credentials
+| File | Owns |
+| --- | --- |
+| `identity.js` | name, title, tagline |
+| `links.js` | email, phone, GitHub, LinkedIn, résumé path |
+| `about.js` · `skills.js` · `experience.js` · `projects.js` | section content |
+| `stats.js` | the telemetry HUD metrics |
+| `certifications.js` · `education.js` | credentials |
 
-Put your résumé PDF in `public/` and point `links.resume` at it.
-GitHub stats read the username from the `<GithubStats username="…" />` prop in `src/components/sections/projects.jsx`.
+> Put your résumé PDF in `public/` and point `links.resume` at it.
+> GitHub stats read the username from the `<GithubStats username="…" />` prop in [`src/components/sections/projects.jsx`](src/components/sections/projects.jsx).
+
+<br />
 
 ---
 
@@ -159,6 +223,8 @@ GitHub stats read the username from the `<GithubStats username="…" />` prop in
 | `npm run test:smoke` | Smoke tests |
 | `npm run test:data` | Data-layer tests |
 
+<br />
+
 ---
 
 ## ☁️ Deployment
@@ -167,7 +233,9 @@ Deploys cleanly to **Vercel**:
 
 1. Push to GitHub and import the repo into Vercel.
 2. Add `RESEND_API_KEY` (and `RESEND_FROM` / `CONTACT_TO` if used) to the environment variables.
-3. Deploy — the default build/start commands work out of the box.
+3. Deploy — the default build / start commands work out of the box.
+
+<br />
 
 ---
 
@@ -175,8 +243,10 @@ Deploys cleanly to **Vercel**:
 
 - Full text content is server-rendered in `SystemFallback` for crawlers and no-JS visitors.
 - `prefers-reduced-motion` disables the WebGL scene, the cursor animation, and decorative motion.
-- Touch / small screens get the static experience (no GPU cost).
+- Touch / small screens get the static experience — **no GPU cost**.
 - Keyboard support across the palette, terminal, and section panels (Esc / arrows / Enter).
+
+<br />
 
 ---
 
@@ -184,6 +254,14 @@ Deploys cleanly to **Vercel**:
 
 Personal portfolio — all rights reserved © Sourabh Jha. Code may be referenced for learning; please don't redistribute the content (résumé data, copy) as your own.
 
----
+<br />
 
-<p align="center"><em>Built as a living system, not a static page.</em></p>
+<div align="center">
+
+<sub>Built as a living system, not a static page.</sub>
+
+<br /><br />
+
+`#020202` · `#B2D5E5`
+
+</div>
