@@ -131,8 +131,9 @@ export function SystemFallback() {
           </svg>
         </div>
 
-        {/* Identity column */}
-        <div className="relative z-10 flex w-full max-w-2xl flex-col items-center text-center">
+        {/* Identity column — plain block (not flex), so text children take full
+            width and wrap instead of shrink-to-fitting and overflowing. */}
+        <div className="relative z-10 mx-auto w-full max-w-2xl text-center">
           {/* availability */}
           <span
             className="fb-rise inline-flex items-center gap-2"
@@ -150,17 +151,17 @@ export function SystemFallback() {
 
           {/* name in a target-lock reticle */}
           <div
-            className="fb-rise relative mt-9"
-            style={{ animationDelay: '90ms', padding: 'clamp(18px,3.4vw,40px) clamp(24px,5vw,64px)' }}
+            className="fb-rise relative mt-8 inline-block max-w-full"
+            style={{ animationDelay: '90ms', padding: 'clamp(14px,3vw,40px) clamp(16px,4vw,60px)' }}
           >
             <span aria-hidden="true" style={cornerStyle('tl')} />
             <span aria-hidden="true" style={cornerStyle('tr')} />
             <span aria-hidden="true" style={cornerStyle('bl')} />
             <span aria-hidden="true" style={cornerStyle('br')} />
             <h1
-              className="font-sans font-bold uppercase leading-[0.92]"
+              className="font-sans font-bold uppercase leading-[0.95]"
               style={{
-                fontSize: 'clamp(38px,7.4vw,82px)',
+                fontSize: 'clamp(30px,8vw,80px)',
                 letterSpacing: '0.01em',
                 color: 'var(--fg)',
                 textShadow: '0 0 44px rgba(178,213,229,0.4), 0 8px 30px rgba(0,0,0,0.85)',
@@ -172,7 +173,7 @@ export function SystemFallback() {
 
           {/* role */}
           <p
-            className="fb-rise mt-7 font-mono text-[11px] uppercase tracking-[0.3em] sm:text-xs"
+            className="fb-rise mt-7 w-full font-mono text-[9px] uppercase tracking-[0.14em] sm:text-xs sm:tracking-[0.3em]"
             style={{ animationDelay: '170ms', color: 'rgba(178,213,229,0.6)' }}
           >
             {identity.title}
@@ -180,14 +181,14 @@ export function SystemFallback() {
 
           {/* tagline */}
           <p
-            className="fb-rise mt-4 max-w-md font-sans text-[15px] leading-relaxed sm:text-base"
-            style={{ animationDelay: '250ms', color: 'rgba(178,213,229,0.72)' }}
+            className="fb-rise mx-auto mt-4 font-sans text-[14px] leading-relaxed sm:text-base"
+            style={{ animationDelay: '250ms', color: 'rgba(178,213,229,0.72)', maxWidth: 'min(24rem, calc(100vw - 56px))' }}
           >
             {identity.tagline}
           </p>
 
           {/* CTAs — two, restrained */}
-          <div className="fb-rise mt-9 flex items-center gap-5" style={{ animationDelay: '330ms' }}>
+          <div className="fb-rise mt-9 flex items-center justify-center gap-5" style={{ animationDelay: '330ms' }}>
             <a
               href="#projects"
               className="fb-cta fb-cta--primary rounded-full px-6 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.16em]"

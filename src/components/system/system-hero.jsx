@@ -519,7 +519,7 @@ export function SystemHero() {
         aria-label="Sourabh Jha — portfolio"
       >
         <SystemFallback />
-        <div className="fixed bottom-3 right-3 z-40">
+        <div className="fixed bottom-3 right-3 z-40 origin-bottom-right scale-90 sm:scale-100">
           <HudQuality quality={quality} onSetQuality={setQuality} />
         </div>
       </section>
