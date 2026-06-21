@@ -9,6 +9,8 @@ module.exports = {
   theme: {
     // Responsive breakpoint contract (UI-SPEC § Responsive Baseline).
     screens: {
+      xs: '480px',
+      sm: '640px',
       md: '768px',
       lg: '1024px',
       xl: '1280px',
