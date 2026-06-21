@@ -30,6 +30,9 @@ yarn-error.log*
 # claude skills
 .claude/
 
+# planning
+.planning/
+
 # markdown (keep README)
 *.md
 !README.md
