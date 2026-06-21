@@ -23,6 +23,15 @@ import { Projects } from '@/components/sections/projects';
 import { CertsEducation } from '@/components/sections/certs-education';
 import { Contact } from '@/components/sections/contact';
 
+const FALLBACK_SECTIONS = [
+  { id: 'about', label: 'About' },
+  { id: 'skills', label: 'Skills' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'experience', label: 'Experience' },
+  { id: 'credentials', label: 'Certs' },
+  { id: 'contact', label: 'Contact' },
+];
+
 /* ── Static node positions for the SVG node graph ─────────────────────── */
 const SVG_NODES = [
   { x: 250, y: 150, label: 'core',        r: 18, primary: true  },
@@ -40,6 +49,44 @@ const SVG_EDGES = [
 export function SystemFallback() {
   return (
     <>
+      {/* Cheap, GPU-light motion — disabled under reduced-motion via media query. */}
+      <style>{`
+        @keyframes fb-node-pulse {
+          0%, 100% { opacity: 0.55; }
+          50%      { opacity: 1; }
+        }
+        .fb-node { animation: fb-node-pulse 2.4s ease-in-out infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .fb-node { animation: none; }
+        }
+      `}</style>
+
+      {/* Sticky section nav — the low-tier replacement for 3D click-to-navigate. */}
+      <nav
+        aria-label="Sections"
+        className="sticky top-0 z-30 w-full overflow-x-auto"
+        style={{
+          background: 'rgba(2,2,2,0.72)',
+          backdropFilter: 'blur(14px)',
+          WebkitBackdropFilter: 'blur(14px)',
+          borderBottom: '1px solid rgba(178,213,229,0.14)',
+        }}
+      >
+        <ul className="mx-auto flex w-max max-w-content items-center gap-1 px-3 py-2.5">
+          {FALLBACK_SECTIONS.map(({ id, label }) => (
+            <li key={id}>
+              <a
+                href={`#${id}`}
+                className="block whitespace-nowrap rounded-full px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-[0.14em]"
+                style={{ color: 'rgba(178,213,229,0.7)' }}
+              >
+                {label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
       {/* ── Hero / graph section ─────────────────────────────────────────── */}
       <div
         className="relative flex min-h-[100svh] w-full flex-col items-center justify-center overflow-hidden"
@@ -99,6 +146,8 @@ export function SystemFallback() {
                   strokeWidth="1"
                   strokeOpacity={n.primary ? 0.9 : 0.55}
                   fill="none"
+                  className="fb-node"
+                  style={{ animationDelay: `${n.x * 4}ms` }}
                 />
                 <text
                   x={n.x} y={n.y + n.r + 12}
