@@ -24,6 +24,8 @@ import { SectionPanel } from './section-panel';
 import { LiveTelemetry } from './live-telemetry';
 import { CommandPalette } from './command-palette';
 import { CommandTerminal } from './command-terminal';
+import { useDeviceTier } from '@/lib/use-device-tier';
+import { TIER } from '@/lib/device-tier';
 
 const SystemScene = dynamic(() => import('./system-scene'), {
   ssr: false,
@@ -348,19 +350,8 @@ function TourCaption({ active, section }) {
    plays — even when the scene chunk loads instantly (e.g. localhost). */
 const MIN_LOADER_MS = 3200;
 
-function CanvasOrFallback({ active, onSelect, trace }) {
-  const prefersReducedMotion = useReducedMotion();
-  const [isMobile, setIsMobile] = useState(false);
+function CanvasOrFallback({ active, onSelect, trace, tier }) {
   const [bootDone, setBootDone] = useState(false);
-
-  // Phones / small screens get the static fallback (full content, no WebGL cost).
-  useEffect(() => {
-    const mq = window.matchMedia('(max-width: 820px)');
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
 
   // Hold the loader for a minimum duration before mounting the scene.
   useEffect(() => {
@@ -368,10 +359,15 @@ function CanvasOrFallback({ active, onSelect, trace }) {
     return () => clearTimeout(t);
   }, []);
 
-  if (prefersReducedMotion || isMobile) return <SystemFallback />;
+  // Low tier (phones, weak GPU, reduced-motion, save-data) → static experience.
+  if (tier === TIER.LOW) return <SystemFallback />;
+
+  const quality = tier === TIER.HIGH ? 'high' : 'mid';
   return (
     <div className="absolute inset-0">
-      {bootDone ? <SystemScene active={active} onSelect={onSelect} trace={trace} /> : <SystemLoader />}
+      {bootDone
+        ? <SystemScene active={active} onSelect={onSelect} trace={trace} quality={quality} />
+        : <SystemLoader />}
     </div>
   );
 }
@@ -388,6 +384,7 @@ export function SystemHero() {
   const [trace, setTrace] = useState(0);
   const [tourStep, setTourStep] = useState(-1); // -1 = tour off
   const prefersReducedMotion = useReducedMotion();
+  const { tier, quality, setQuality } = useDeviceTier();
 
   const tourActive = tourStep >= 0;
   const fireTrace = useCallback(() => setTrace((n) => n + 1), []);
@@ -469,7 +466,7 @@ export function SystemHero() {
       style={{ background: 'var(--bg)' }}
       aria-label="Sourabh Jha — interactive 3D system topology"
     >
-      <CanvasOrFallback active={active} onSelect={selectSection} trace={trace} />
+      <CanvasOrFallback active={active} onSelect={selectSection} trace={trace} tier={tier} />
       {!prefersReducedMotion && <BootSequence />}
 
       {/* Top HUD bar — identity · controls · telemetry. Wraps gracefully:
