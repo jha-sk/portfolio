@@ -112,7 +112,7 @@ export function SystemLoader() {
       {/* top status line */}
       <div style={{ position: 'absolute', top: 26, left: 0, right: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8, fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'rgba(178,213,229,0.55)' }}>
         <span className="sl-anim" style={{ width: 6, height: 6, borderRadius: '50%', background: '#B2D5E5', boxShadow: '0 0 8px #B2D5E5', animation: 'sl-blink 1.1s steps(2,end) infinite' }} />
-        {identity.name} {/* cold start */}
+        {identity.name} {'// cold start'}
       </div>
 
       {/* percentage — top-right HUD */}
