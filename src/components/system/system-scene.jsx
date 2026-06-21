@@ -51,6 +51,23 @@ const LED_GREEN = '#9fdcea';
 const LED_AMBER = '#cfe7f2';
 const LED_ICE   = '#7fb8cc';
 
+/* ── Quality tiers ─────────────────────────────────────────────────────────
+   One source of truth for how heavy the scene is. `high` is the full scene;
+   `mid` strips the most expensive GPU work (reflective floor, DoF, noise) and
+   thins object/packet counts for weak GPUs and tablets. */
+const QUALITY = {
+  high: {
+    dpr: [1, 2], antialias: true, reflectiveFloor: true,
+    postFx: 'full', ambientRacks: Infinity, coolingTowers: true,
+    packets: 'full', autoRotate: 0.5,
+  },
+  mid: {
+    dpr: [1, 1.5], antialias: false, reflectiveFloor: false,
+    postFx: 'lite', ambientRacks: 8, coolingTowers: false,
+    packets: 'core', autoRotate: 0.3,
+  },
+};
+
 /* ── Node pulse registry ───────────────────────────────────────────────────
    Packets stamp the clock-time of their arrival per node key; nodes read it
    each frame and briefly flare, so the flow looks causal. Module-level
@@ -649,13 +666,16 @@ const AMBIENT_EDGES = [
 
 const ALL_EDGES = [...MESH_EDGES, ...RACK_EDGES, ...AMBIENT_EDGES];
 
-function EdgesAndPackets() {
+function EdgesAndPackets({ packets = 'full' }) {
+  const livePackets = ALL_EDGES.filter(
+    (e) => e.packet && (packets === 'full' || e.bright)
+  );
   return (
     <>
       {ALL_EDGES.map((e, i) => (
         <Edge key={`e-${i}`} start={e.start} end={e.end} bright={e.bright} />
       ))}
-      {ALL_EDGES.filter(e => e.packet).map((e, i) => (
+      {livePackets.map((e, i) => (
         <Packet
           key={`p-${i}`}
           start={e.start}
@@ -895,7 +915,7 @@ function GridFloor() {
 }
 
 /* ── Full scene graph ────────────────────────────────────────────────────── */
-function SceneGraph({ onSelect, active, trace }) {
+function SceneGraph({ onSelect, active, trace, q }) {
   const controlsRef = useRef();
   const dofRef = useRef();
   const [focus, setFocus] = useState(null);
@@ -914,7 +934,7 @@ function SceneGraph({ onSelect, active, trace }) {
       <pointLight position={[0, 12, 8]}  intensity={120} distance={80} color="#bfe3f2" />
       <pointLight position={[8, 6, -10]} intensity={60}  distance={60} color="#a0cfe4" />
 
-      <ReflectiveFloor />
+      {q.reflectiveFloor && <ReflectiveFloor />}
       <GridFloor />
       <RadarRing />
       <Core onSelect={onSelect} onFocus={setFocus} />
@@ -927,28 +947,28 @@ function SceneGraph({ onSelect, active, trace }) {
         <Rack key={cfg.name} config={cfg} onSelect={onSelect} onFocus={setFocus} />
       ))}
 
-      {/* decorative server-room density */}
-      {AMBIENT_RACKS.map((pos, i) => (
+      {/* decorative server-room density (thinned on lower tiers) */}
+      {AMBIENT_RACKS.slice(0, q.ambientRacks).map((pos, i) => (
         <AmbientRack key={`ar-${i}`} position={pos} />
       ))}
-      {COOLING_TOWERS.map((pos, i) => (
+      {q.coolingTowers && COOLING_TOWERS.map((pos, i) => (
         <CoolingTower key={`ct-${i}`} position={pos} index={i} />
       ))}
 
       <Database onSelect={onSelect} onFocus={setFocus} />
-      <EdgesAndPackets />
+      <EdgesAndPackets packets={q.packets} />
       <Trace runId={trace} />
 
       <CameraRig />
       <CameraFlyTo active={active} focus={focus} controlsRef={controlsRef} />
-      <DofDriver dofRef={dofRef} focus={focus} />
+      {q.postFx === 'full' && <DofDriver dofRef={dofRef} focus={focus} />}
 
       <OrbitControls
         ref={controlsRef}
         enableDamping
         dampingFactor={0.06}
         autoRotate
-        autoRotateSpeed={0.5}
+        autoRotateSpeed={q.autoRotate}
         target={[0, 1.8, 0]}
         minDistance={4}
         maxDistance={52}
@@ -957,29 +977,45 @@ function SceneGraph({ onSelect, active, trace }) {
       />
 
       <EffectComposer>
-        <DepthOfField
-          ref={dofRef}
-          target={[0, 1.8, 0]}
-          focalLength={0.015}
-          focusRange={0.012}
-          bokehScale={0}
-        />
-        <Bloom
-          luminanceThreshold={0.34}
-          luminanceSmoothing={0.85}
-          mipmapBlur
-          intensity={0.42}
-          radius={0.55}
-        />
-        <Vignette offset={0.3} darkness={0.65} />
-        <Noise opacity={0.025} premultiply blendFunction={BlendFunction.SOFT_LIGHT} />
+        {q.postFx === 'full' ? (
+          <>
+            <DepthOfField
+              ref={dofRef}
+              target={[0, 1.8, 0]}
+              focalLength={0.015}
+              focusRange={0.012}
+              bokehScale={0}
+            />
+            <Bloom
+              luminanceThreshold={0.34}
+              luminanceSmoothing={0.85}
+              mipmapBlur
+              intensity={0.42}
+              radius={0.55}
+            />
+            <Vignette offset={0.3} darkness={0.65} />
+            <Noise opacity={0.025} premultiply blendFunction={BlendFunction.SOFT_LIGHT} />
+          </>
+        ) : (
+          <>
+            <Bloom
+              luminanceThreshold={0.4}
+              luminanceSmoothing={0.8}
+              mipmapBlur
+              intensity={0.3}
+              radius={0.5}
+            />
+            <Vignette offset={0.3} darkness={0.6} />
+          </>
+        )}
       </EffectComposer>
     </>
   );
 }
 
 /* ── Canvas export ───────────────────────────────────────────────────────── */
-export default function SystemScene({ onSelect, active, trace }) {
+export default function SystemScene({ onSelect, active, trace, quality = 'high' }) {
+  const q = QUALITY[quality] ?? QUALITY.high;
   return (
     <>
       {/* Node label styles — scoped via a style tag in the canvas wrapper */}
@@ -1006,14 +1042,14 @@ export default function SystemScene({ onSelect, active, trace }) {
 
       <Canvas
         camera={{ position: [0, 18, 32], fov: 52, near: 0.1, far: 280 }}
-        gl={{ antialias: true, alpha: false, toneMapping: THREE.NoToneMapping }}
-        dpr={[1, 2]}
+        gl={{ antialias: q.antialias, alpha: false, toneMapping: THREE.NoToneMapping }}
+        dpr={q.dpr}
         style={{ background: VOID, cursor: 'grab' }}
         onCreated={({ gl }) => {
           gl.setClearColor(0x020202, 1);
         }}
       >
-        <SceneGraph onSelect={onSelect} active={active} trace={trace} />
+        <SceneGraph onSelect={onSelect} active={active} trace={trace} q={q} />
       </Canvas>
     </>
   );
