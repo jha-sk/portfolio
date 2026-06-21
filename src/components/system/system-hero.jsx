@@ -504,6 +504,28 @@ export function SystemHero() {
 
   const tourSection = tourActive ? TOUR_SEQUENCE[tourStep] : null;
 
+  // Low tier: render a clean static document. SystemFallback is self-sufficient
+  // (its own sticky section nav + inline content), so we suppress every 3D-only
+  // overlay (boot, HUD bar, tour caption, hint, dock, section panel) and the
+  // `overflow-hidden` wrapper — that wrapper would establish a non-scrolling
+  // container and trap the fallback's `position: sticky` nav. A single floating
+  // quality pill remains so a misdetected visitor can opt back into the 3D scene.
+  if (tier === TIER.LOW) {
+    return (
+      <section
+        id="hero"
+        className="relative"
+        style={{ background: 'var(--bg)' }}
+        aria-label="Sourabh Jha — portfolio"
+      >
+        <SystemFallback />
+        <div className="fixed bottom-3 right-3 z-40">
+          <HudQuality quality={quality} onSetQuality={setQuality} />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       id="hero"
